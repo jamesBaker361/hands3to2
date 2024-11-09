@@ -1,7 +1,8 @@
 import math
 
 class SceneParameters:
-    def __init__(self,object_location_and_rotation:tuple, camera_locations_and_rotations:list,light_locations_and_rotations:list) -> None:
+    def __init__(self,object_location_and_rotation:tuple, camera_locations_and_rotations:list,light_locations_and_rotations:list,object_scale:float=1.0) -> None:
+        self.object_scale=object_scale
         self.object_location_and_rotation=object_location_and_rotation #x,y,z,x,y,z
         self.camera_locations_and_rotations=camera_locations_and_rotations #[(x,y,z,x,y,z)]
         self.light_locations_and_rotations=light_locations_and_rotations #[(x,y,z,x,y,z,power)]

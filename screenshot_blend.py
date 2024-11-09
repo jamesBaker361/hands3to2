@@ -52,6 +52,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
             for character in character_list:
                 folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
                 os.makedirs(folder,exist_ok=True)
+                character_obj.scale=(scene_params.object_scale)
                 character_obj=bpy.data.objects[character]
                 character_obj.hide_set(False)
                 character_obj.location=scene_params.object_location_and_rotation[:3]
