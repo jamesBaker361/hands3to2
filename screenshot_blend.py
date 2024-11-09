@@ -3,6 +3,9 @@ import json
 import math
 import os
 import mathutils
+import sys
+sys.path.append("\\Users\\jlbak\\hands3to2")
+from screenshot_data import *
 
 # Set camera parameters
 camera = bpy.context.scene.camera
@@ -10,24 +13,6 @@ light=bpy.data.objects["MainLight"]
 
 #light.data.shadow_soft_size=10
 
-class SceneParameters:
-    def __init__(self,object_location_and_rotation:tuple, camera_locations_and_rotations:list,light_locations_and_rotations:list) -> None:
-        self.object_location_and_rotation=object_location_and_rotation #x,y,z,x,y,z
-        self.camera_locations_and_rotations=camera_locations_and_rotations #[(x,y,z,x,y,z)]
-        self.light_locations_and_rotations=light_locations_and_rotations #[(x,y,z,x,y,z,power)]
-
-character_list=["budgie"]
-scene_camera_params_dict={
-    "dungeon":SceneParameters([0,-0.025,-.01,math.pi/2,0,math.pi/2],
-                              [[0, 0, 0, math.pi *70/180, 0, math.pi*185/180]],
-                              [[.1, 0, 0, 0,0,0,5000],
-                               [0, .1, 0, 0, 0, 0],
-                               [0, 0, .1, 0, 0, 0],
-                               [-.1, 0, 0, 0,0,0],
-                               [0, -.1, 0, 0, 0, 0],
-                               [0, 0, -.1, 0, 0, 0],
-                               [0, 0, 0, 0, 0, 0]])
-}
 
 new_camera_params = {
            # "location": (5.0, -5.0, 5.0),   # Change to your desired location
