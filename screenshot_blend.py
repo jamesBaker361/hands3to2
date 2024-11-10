@@ -3,6 +3,7 @@ import json
 import math
 import os
 import mathutils
+from mathutils import Vector
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
 from screenshot_data import *
@@ -13,6 +14,31 @@ light=bpy.data.objects["MainLight"]
 
 #light.data.shadow_soft_size=10
 
+def rescale_to_unit_box(obj):
+    # Make sure the object is selected and active
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    
+    # Calculate the bounding box dimensions
+    bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+    min_corner = Vector((min(v[0] for v in bbox_corners),
+                         min(v[1] for v in bbox_corners),
+                         min(v[2] for v in bbox_corners)))
+    max_corner = Vector((max(v[0] for v in bbox_corners),
+                         max(v[1] for v in bbox_corners),
+                         max(v[2] for v in bbox_corners)))
+    bbox_size = max_corner - min_corner
+    
+    # Calculate scale factor to fit in a 1x1x1 box
+    max_dimension = max(bbox_size)  # Find the largest dimension
+    scale_factor = 1.0 / max_dimension
+    
+    # Apply scale factor
+    obj.scale = (scale_factor, scale_factor, scale_factor)
+    
+    # Apply the scale transformation
+    bpy.ops.object.transform_apply(scale=True)
 
 new_camera_params = {
            # "location": (5.0, -5.0, 5.0),   # Change to your desired location
@@ -41,7 +67,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
     except:
         collection=bpy.data.collections[obj_name]
         for obj in collection.objects:
-            obj.hide_set(True)
+            obj.hide_set(False)
     for s,camera_params in enumerate(scene_params.camera_locations_and_rotations):
         
         # Apply the new camera parameters
@@ -63,8 +89,27 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
                 os.makedirs(folder,exist_ok=True)
                 character_obj=bpy.data.objects[character]
-                character_obj.scale=(scene_params.object_scale)
+                rescale_to_unit_box(character_obj)
+                character_obj.scale=(scene_params.object_scale,scene_params.object_scale,scene_params.object_scale)
                 character_obj.rotation_euler=character_dict[character]
+
+                # Calculate the direction from the object to the camera in the XY plane
+                direction_to_camera = bpy.context.scene.camera.location - character_obj.location
+                direction_to_camera.z = 0  # Ignore the Z component to only rotate in the XY plane
+
+                # Normalize the direction vector
+                direction_to_camera.normalize()
+
+                # Get the angle between the object's current forward direction and the direction to the camera
+                angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
+
+                # Set the object's rotation around the Z axis
+                obj.rotation_euler[2] = angle  # Apply the angle to the Z-axis
+
+                # Update the scene
+                bpy.context.view_layer.update()
+
+
                 character_obj.hide_set(False)
 
                 desired_location=scene_params.object_location_and_rotation[:3]
@@ -101,3 +146,12 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
 
 
                     print("Screenshot saved to:", bpy.context.scene.render.filepath)
+                character_obj.hide_set(True)
+                #character_obj.scale=(0.0000001,0.0000001,0.0000001)
+    try:
+        scene_obj=bpy.data.objects[scene_mesh_name]
+        scene_obj.hide_set(True)
+    except:
+        collection=bpy.data.collections[obj_name]
+        for obj in collection.objects:
+            obj.hide_set(True)
