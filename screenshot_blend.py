@@ -25,13 +25,23 @@ new_camera_params = {
             "angle_x":0.90,
             "angle_y":0
 }
-
-for obj_name in character_list+[k for k in scene_camera_params_dict.keys()]:
-    bpy.data.objects[obj_name].hide_set(True)
+print([c for c in bpy.data.collections])
+for obj_name in [k for k in character_dict.keys()]+[k for k in scene_camera_params_dict.keys()]:
+    try:
+        bpy.data.objects[obj_name].hide_set(True)
+    except:
+        collection=bpy.data.collections[obj_name]
+        for obj in collection.objects:
+            obj.hide_set(True)
 
 for scene_mesh_name,scene_params in scene_camera_params_dict.items():
-    scene_obj=bpy.data.objects[scene_mesh_name]
-    scene_obj.hide_set(False)
+    try:
+        scene_obj=bpy.data.objects[scene_mesh_name]
+        scene_obj.hide_set(False)
+    except:
+        collection=bpy.data.collections[obj_name]
+        for obj in collection.objects:
+            obj.hide_set(True)
     for s,camera_params in enumerate(scene_params.camera_locations_and_rotations):
         
         # Apply the new camera parameters
@@ -49,14 +59,25 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
         
         step=45
         for l,light_params in enumerate(scene_params.light_locations_and_rotations):
-            for character in character_list:
+            for character in character_dict:
                 folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
                 os.makedirs(folder,exist_ok=True)
-                character_obj.scale=(scene_params.object_scale)
                 character_obj=bpy.data.objects[character]
+                character_obj.scale=(scene_params.object_scale)
+                character_obj.rotation_euler=character_dict[character]
                 character_obj.hide_set(False)
-                character_obj.location=scene_params.object_location_and_rotation[:3]
-                character_obj.rotation_euler=scene_params.object_location_and_rotation[3:]
+
+                desired_location=scene_params.object_location_and_rotation[:3]
+                # Adjust the object's location based on its bottom point
+                bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+
+                # Offset the object's location so its bottom is at desired_location
+                offset_z = desired_location[2] - min_z
+                character_obj.location = (desired_location[0], desired_location[1], character_obj.location.z + offset_z)
+
+                #character_obj.location=scene_params.object_location_and_rotation[:3]
+                #character_obj.rotation_euler=scene_params.object_location_and_rotation[3:]
                 
                 rotation_degrees = (0, step, 0)  # Set rotation in radians (X, Y, Z)
                 light.location=tuple([p for p in light_params[:3]])
@@ -64,7 +85,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 light.data.energy=light_params[6]
                     #rotation_radians = tuple(math.radians(deg) for deg in rotation_degrees)
                 rotation_radians=mathutils.Euler([math.radians(deg) for deg in rotation_degrees], 'XYZ')
-                for angle in range(0,45,step):
+                for angle in range(0,90,step):
                     
                 
                     character_obj.rotation_euler.rotate_axis("Y",math.radians(step))
