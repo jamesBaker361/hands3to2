@@ -147,6 +147,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
 
                     print("Screenshot saved to:", bpy.context.scene.render.filepath)
                 character_obj.hide_set(True)
+                character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scene_params.object_scale)
                 #character_obj.scale=(0.0000001,0.0000001,0.0000001)
     try:
         scene_obj=bpy.data.objects[scene_mesh_name]
