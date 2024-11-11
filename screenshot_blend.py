@@ -19,9 +19,9 @@ def toggle_hide(obj,value:bool):
     if isinstance(obj, bpy.types.Collection):
         # Recursively call toggle_hide on each child in the collection
         for child in obj.objects:
-            toggle_hide(child)
+            toggle_hide(child,value)
         for sub_collection in obj.children:
-            toggle_hide(sub_collection)
+            toggle_hide(sub_collection,value)
     else:
         # Toggle hide_viewport for individual objects
         obj.hide_viewport=value
@@ -159,9 +159,9 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 character_obj.hide_viewport=True
                 character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scene_params.object_scale)
                 #character_obj.scale=(0.0000001,0.0000001,0.0000001)
-    try:
-        scene_obj=bpy.data.objects[scene_mesh_name]
-        scene_obj.hide_viewport=True
-    except:
-        collection=bpy.data.collections[obj_name]
-        toggle_hide(collection,True)
+        try:
+            scene_obj=bpy.data.objects[scene_mesh_name]
+            scene_obj.hide_viewport=True
+        except:
+            collection=bpy.data.collections[obj_name]
+            toggle_hide(collection,True)
