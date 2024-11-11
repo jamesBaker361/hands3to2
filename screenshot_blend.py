@@ -23,8 +23,8 @@ def toggle_hide(obj,value:bool):
         for sub_collection in obj.children:
             toggle_hide(sub_collection)
     else:
-        # Toggle hide_set for individual objects
-        obj.hide_set(value)
+        # Toggle hide_viewport for individual objects
+        obj.hide_viewport=value
 
 def rescale_to_unit_box(obj):
     # Make sure the object is selected and active
@@ -66,7 +66,7 @@ new_camera_params = {
 print([c for c in bpy.data.collections])
 for obj_name in [k for k in character_dict.keys()]+[k for k in scene_camera_params_dict.keys()]:
     try:
-        bpy.data.objects[obj_name].hide_set(True)
+        bpy.data.objects[obj_name].hide_viewport=True
     except:
         collection=bpy.data.collections[obj_name]
         toggle_hide(collection,True)
@@ -74,7 +74,7 @@ for obj_name in [k for k in character_dict.keys()]+[k for k in scene_camera_para
 for scene_mesh_name,scene_params in scene_camera_params_dict.items():
     try:
         scene_obj=bpy.data.objects[scene_mesh_name]
-        scene_obj.hide_set(False)
+        scene_obj.hide_viewport=True
     except:
         collection=bpy.data.collections[obj_name]
         toggle_hide(collection,False)
@@ -114,13 +114,13 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
 
                 # Set the object's rotation around the Z axis
-                obj.rotation_euler[2] = angle  # Apply the angle to the Z-axis
+                character_obj.rotation_euler[2] = angle  # Apply the angle to the Z-axis
 
                 # Update the scene
                 bpy.context.view_layer.update()
 
 
-                character_obj.hide_set(False)
+                character_obj.hide_viewport=True
 
                 desired_location=scene_params.object_location_and_rotation[:3]
                 # Adjust the object's location based on its bottom point
@@ -156,12 +156,12 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
 
 
                     print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                character_obj.hide_set(True)
+                character_obj.hide_viewport=True
                 character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scene_params.object_scale)
                 #character_obj.scale=(0.0000001,0.0000001,0.0000001)
     try:
         scene_obj=bpy.data.objects[scene_mesh_name]
-        scene_obj.hide_set(True)
+        scene_obj.hide_viewport=True
     except:
         collection=bpy.data.collections[obj_name]
         toggle_hide(collection,True)
