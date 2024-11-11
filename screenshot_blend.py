@@ -14,6 +14,18 @@ light=bpy.data.objects["MainLight"]
 
 #light.data.shadow_soft_size=10
 
+def toggle_hide(obj,value:bool):
+    # Check if the obj is a collection
+    if isinstance(obj, bpy.types.Collection):
+        # Recursively call toggle_hide on each child in the collection
+        for child in obj.objects:
+            toggle_hide(child)
+        for sub_collection in obj.children:
+            toggle_hide(sub_collection)
+    else:
+        # Toggle hide_set for individual objects
+        obj.hide_set(value)
+
 def rescale_to_unit_box(obj):
     # Make sure the object is selected and active
     bpy.context.view_layer.objects.active = obj
@@ -57,8 +69,7 @@ for obj_name in [k for k in character_dict.keys()]+[k for k in scene_camera_para
         bpy.data.objects[obj_name].hide_set(True)
     except:
         collection=bpy.data.collections[obj_name]
-        for obj in collection.objects:
-            obj.hide_set(True)
+        toggle_hide(collection,True)
 
 for scene_mesh_name,scene_params in scene_camera_params_dict.items():
     try:
@@ -66,8 +77,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
         scene_obj.hide_set(False)
     except:
         collection=bpy.data.collections[obj_name]
-        for obj in collection.objects:
-            obj.hide_set(False)
+        toggle_hide(collection,False)
     for s,camera_params in enumerate(scene_params.camera_locations_and_rotations):
         
         # Apply the new camera parameters
@@ -154,5 +164,4 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
         scene_obj.hide_set(True)
     except:
         collection=bpy.data.collections[obj_name]
-        for obj in collection.objects:
-            obj.hide_set(True)
+        toggle_hide(collection,True)
