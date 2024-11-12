@@ -6,14 +6,25 @@ import mathutils
 from mathutils import Vector
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
+sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
 import re
-
+import platform
 # Set camera parameters
 camera = bpy.context.scene.camera
 light=bpy.data.objects["MainLight"]
 
 #light.data.shadow_soft_size=10
+
+using_mac=True
+
+if platform.system() == "Darwin":
+    print("Running on macOS")
+elif platform.system() == "Windows":
+    print("Running on Windows")
+    using_mac=False
+else:
+    print(f"Running on another OS {platform.system()}")
 
 def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
@@ -104,7 +115,12 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
         step=45
         for l,light_params in enumerate(scene_params.light_locations_and_rotations):
             for character in character_dict:
-                folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
+
+
+                if using_mac:
+                    folder=f"/Users/jbaker15/Desktop/hands3to2/{scene_mesh_name}/{character}"
+                else:
+                    folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
                 os.makedirs(folder,exist_ok=True)
                 character_obj=bpy.data.objects[character]
                 rescale_to_unit_box(character_obj)
