@@ -115,16 +115,12 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
         step=45
         for l,light_params in enumerate(scene_params.light_locations_and_rotations):
             for character in character_dict:
-<<<<<<< HEAD
-                folder=f"\\Users\\jlbak\\hands3to2\\blender_images\\{scene_mesh_name}\\{character}"
-=======
 
 
                 if using_mac:
                     folder=f"/Users/jbaker15/Desktop/hands3to2/{scene_mesh_name}/{character}"
                 else:
                     folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
->>>>>>> 49e8ea6038f50e10fa68aa59916fa27b1fb64739
                 os.makedirs(folder,exist_ok=True)
                 character_obj=bpy.data.objects[character]
                 rescale_to_unit_box(character_obj)
