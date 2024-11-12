@@ -104,7 +104,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
         step=45
         for l,light_params in enumerate(scene_params.light_locations_and_rotations):
             for character in character_dict:
-                folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
+                folder=f"\\Users\\jlbak\\hands3to2\\blender_images\\{scene_mesh_name}\\{character}"
                 os.makedirs(folder,exist_ok=True)
                 character_obj=bpy.data.objects[character]
                 rescale_to_unit_box(character_obj)
@@ -119,10 +119,10 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 direction_to_camera.normalize()
 
                 # Get the angle between the object's current forward direction and the direction to the camera
-                angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
+                #angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
 
                 # Set the object's rotation around the Z axis
-                character_obj.rotation_euler[2] = angle  # Apply the angle to the Z-axis
+                character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
 
                 # Update the scene
                 bpy.context.view_layer.update()
