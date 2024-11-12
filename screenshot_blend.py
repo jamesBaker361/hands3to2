@@ -124,63 +124,64 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 os.makedirs(folder,exist_ok=True)
                 character_obj=bpy.data.objects[character]
                 rescale_to_unit_box(character_obj)
-                character_obj.scale=(scene_params.object_scale,scene_params.object_scale,scene_params.object_scale)
-                character_obj.rotation_euler=character_dict[character]
+                for scale in scene_params.object_scale:
+                    character_obj.scale=(scale,scale,scale)
+                    character_obj.rotation_euler=character_dict[character]
 
-                # Calculate the direction from the object to the camera in the XY plane
-                direction_to_camera = bpy.context.scene.camera.location - character_obj.location
-                direction_to_camera.z = 0  # Ignore the Z component to only rotate in the XY plane
+                    # Calculate the direction from the object to the camera in the XY plane
+                    direction_to_camera = bpy.context.scene.camera.location - character_obj.location
+                    direction_to_camera.z = 0  # Ignore the Z component to only rotate in the XY plane
 
-                # Normalize the direction vector
-                direction_to_camera.normalize()
+                    # Normalize the direction vector
+                    direction_to_camera.normalize()
 
-                # Get the angle between the object's current forward direction and the direction to the camera
-                #angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
+                    # Get the angle between the object's current forward direction and the direction to the camera
+                    #angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
 
-                # Set the object's rotation around the Z axis
-                character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
+                    # Set the object's rotation around the Z axis
+                    character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
 
-                # Update the scene
-                bpy.context.view_layer.update()
-
-
-                toggle_hide(character_obj,False)
-
-                desired_location=scene_params.object_location_and_rotation[:3]
-                # Adjust the object's location based on its bottom point
-                bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-
-                # Offset the object's location so its bottom is at desired_location
-                offset_z = desired_location[2] - min_z
-                character_obj.location = (desired_location[0], desired_location[1], character_obj.location.z + offset_z)
-
-                #character_obj.location=scene_params.object_location_and_rotation[:3]
-                #character_obj.rotation_euler=scene_params.object_location_and_rotation[3:]
-                
-                rotation_degrees = (0, step, 0)  # Set rotation in radians (X, Y, Z)
-                #light.location=tuple([p for p in light_params[:3]])
-                #light.rotation_euler=tuple([r for r in light_params[3:6]])
-                light.data.energy=light_params[6]
-                    #rotation_radians = tuple(math.radians(deg) for deg in rotation_degrees)
-                rotation_radians=mathutils.Euler([math.radians(deg) for deg in rotation_degrees], 'XYZ')
-                for angle in range(0,90,step):
-                    
-                
-                    character_obj.rotation_euler.rotate_axis("Y",math.radians(step))
-
-                    # Set render settings for the screenshot
-                    bpy.context.scene.render.filepath = f"{folder}\\{s}_{l}_{angle}.png"
-                    bpy.context.scene.render.image_settings.file_format = 'PNG'
-                    
-
-                    # Render and save the screenshot from the camera's perspective
-                    bpy.ops.render.render(write_still=True)
-                    #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
-
+                    # Update the scene
                     bpy.context.view_layer.update()
-                    print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                toggle_hide(character_obj,True)
-                character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scene_params.object_scale)
-                #character_obj.scale=(0.0000001,0.0000001,0.0000001)
+
+
+                    toggle_hide(character_obj,False)
+
+                    desired_location=scene_params.object_location_and_rotation[:3]
+                    # Adjust the object's location based on its bottom point
+                    bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                    min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+
+                    # Offset the object's location so its bottom is at desired_location
+                    offset_z = desired_location[2] - min_z
+                    character_obj.location = (desired_location[0], desired_location[1], character_obj.location.z + offset_z)
+
+                    #character_obj.location=scene_params.object_location_and_rotation[:3]
+                    #character_obj.rotation_euler=scene_params.object_location_and_rotation[3:]
+                    
+                    rotation_degrees = (0, step, 0)  # Set rotation in radians (X, Y, Z)
+                    #light.location=tuple([p for p in light_params[:3]])
+                    #light.rotation_euler=tuple([r for r in light_params[3:6]])
+                    light.data.energy=light_params[6]
+                        #rotation_radians = tuple(math.radians(deg) for deg in rotation_degrees)
+                    rotation_radians=mathutils.Euler([math.radians(deg) for deg in rotation_degrees], 'XYZ')
+                    for angle in range(0,90,step):
+                        
+                    
+                        character_obj.rotation_euler.rotate_axis("Y",math.radians(step))
+
+                        # Set render settings for the screenshot
+                        bpy.context.scene.render.filepath = f"{folder}\\{s}_{l}_{angle}_{scale}.png"
+                        bpy.context.scene.render.image_settings.file_format = 'PNG'
+                        
+
+                        # Render and save the screenshot from the camera's perspective
+                        bpy.ops.render.render(write_still=True)
+                        #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
+
+                        bpy.context.view_layer.update()
+                        print("Screenshot saved to:", bpy.context.scene.render.filepath)
+                    toggle_hide(character_obj,True)
+                    character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scale)
+                    #character_obj.scale=(0.0000001,0.0000001,0.0000001)
     reset(scene_mesh_name,True)
