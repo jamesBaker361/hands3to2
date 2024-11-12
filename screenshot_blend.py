@@ -18,6 +18,8 @@ def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
     if isinstance(obj, bpy.types.Collection):
         # Recursively call toggle_hide on each child in the collection
+        obj.hide_viewport=value
+        obj.hide_render=value
         for child in obj.objects:
             toggle_hide(child,value)
         for sub_collection in obj.children:
@@ -25,6 +27,19 @@ def toggle_hide(obj,value:bool):
     else:
         # Toggle hide_viewport for individual objects
         obj.hide_viewport=value
+        obj.hide_render=value
+    bpy.context.view_layer.update()
+
+def reset(obj_name:str,value:bool):
+    print(f"resetting {obj_name} to {value}")
+    try:
+        bpy.data.objects[obj_name].hide_viewport=value
+        bpy.data.objects[obj_name].hide_render=value
+    except:
+        collection=bpy.data.collections[obj_name]
+        collection.hide_viewport=value
+        collection.hide_render=value
+        toggle_hide(collection,value)
 
 def rescale_to_unit_box(obj):
     # Make sure the object is selected and active
@@ -65,19 +80,10 @@ new_camera_params = {
 }
 print([c for c in bpy.data.collections])
 for obj_name in [k for k in character_dict.keys()]+[k for k in scene_camera_params_dict.keys()]:
-    try:
-        bpy.data.objects[obj_name].hide_viewport=True
-    except:
-        collection=bpy.data.collections[obj_name]
-        toggle_hide(collection,True)
-
+    reset(obj_name,True)
+bpy.context.view_layer.update()
 for scene_mesh_name,scene_params in scene_camera_params_dict.items():
-    try:
-        scene_obj=bpy.data.objects[scene_mesh_name]
-        scene_obj.hide_viewport=True
-    except:
-        collection=bpy.data.collections[obj_name]
-        toggle_hide(collection,False)
+    reset(scene_mesh_name,False)
     for s,camera_params in enumerate(scene_params.camera_locations_and_rotations):
         
         # Apply the new camera parameters
@@ -120,7 +126,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 bpy.context.view_layer.update()
 
 
-                character_obj.hide_viewport=True
+                toggle_hide(character_obj,False)
 
                 desired_location=scene_params.object_location_and_rotation[:3]
                 # Adjust the object's location based on its bottom point
@@ -135,8 +141,8 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 #character_obj.rotation_euler=scene_params.object_location_and_rotation[3:]
                 
                 rotation_degrees = (0, step, 0)  # Set rotation in radians (X, Y, Z)
-                light.location=tuple([p for p in light_params[:3]])
-                light.rotation_euler=tuple([r for r in light_params[3:6]])
+                #light.location=tuple([p for p in light_params[:3]])
+                #light.rotation_euler=tuple([r for r in light_params[3:6]])
                 light.data.energy=light_params[6]
                     #rotation_radians = tuple(math.radians(deg) for deg in rotation_degrees)
                 rotation_radians=mathutils.Euler([math.radians(deg) for deg in rotation_degrees], 'XYZ')
@@ -154,14 +160,9 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                     bpy.ops.render.render(write_still=True)
                     #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
 
-
+                    bpy.context.view_layer.update()
                     print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                character_obj.hide_viewport=True
+                toggle_hide(character_obj,True)
                 character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scene_params.object_scale)
                 #character_obj.scale=(0.0000001,0.0000001,0.0000001)
-        try:
-            scene_obj=bpy.data.objects[scene_mesh_name]
-            scene_obj.hide_viewport=True
-        except:
-            collection=bpy.data.collections[obj_name]
-            toggle_hide(collection,True)
+    reset(scene_mesh_name,True)
