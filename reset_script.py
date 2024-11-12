@@ -6,6 +6,7 @@ import mathutils
 from mathutils import Vector
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
+sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
 import re
 
