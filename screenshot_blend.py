@@ -7,6 +7,7 @@ from mathutils import Vector
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
 from screenshot_data import *
+import re
 
 # Set camera parameters
 camera = bpy.context.scene.camera
@@ -32,6 +33,7 @@ def toggle_hide(obj,value:bool):
 
 def reset(obj_name:str,value:bool):
     print(f"resetting {obj_name} to {value}")
+    obj_name=re.sub(r'\d+', '', obj_name)
     try:
         bpy.data.objects[obj_name].hide_viewport=value
         bpy.data.objects[obj_name].hide_render=value
