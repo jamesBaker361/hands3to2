@@ -22,6 +22,7 @@ with open(obj_path, 'r') as obj_file:
             [r,g,b]=colors
             #colors=[b,g,r]
             scalars.append(colors)
+            
 
 # Add the mesh to the plotter
 #mesh.point_data["colors"]=np.array(scalars)
