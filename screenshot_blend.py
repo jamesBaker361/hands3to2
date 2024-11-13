@@ -10,9 +10,11 @@ sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
 import re
 import platform
+from PIL import Image, ImageDraw
 # Set camera parameters
 camera = bpy.context.scene.camera
 light=bpy.data.objects["MainLight"]
+
 
 #light.data.shadow_soft_size=10
 
@@ -25,6 +27,71 @@ elif platform.system() == "Windows":
     using_mac=False
 else:
     print(f"Running on another OS {platform.system()}")
+
+
+def add_dots_to_image(image_path, coords1, coords2, radius=5):
+    """
+    Opens an image, adds two dots at specified coordinates, and saves the modified image.
+    
+    Parameters:
+    - image_path: Path to the input image.
+    - coords1, coords2: Tuples (x, y) representing the coordinates where dots will be drawn.
+    - radius: The radius of the dots to be drawn. Default is 5.
+    - output_path: Path where the modified image will be saved.
+    """
+    # Open the image
+    image = Image.open(image_path)
+
+    # Create a drawing context
+    draw = ImageDraw.Draw(image)
+
+    # Draw the first dot (coords1)
+    draw.ellipse([coords1[0] - radius, coords1[1] - radius, coords1[0] + radius, coords1[1] + radius], fill="red")
+
+    # Draw the second dot (coords2)
+    draw.ellipse([coords2[0] - radius, coords2[1] - radius, coords2[0] + radius, coords2[1] + radius], fill="blue")
+
+    # Save the modified image
+    image.save(image_path)
+
+def world_to_pixel(world_coords, camera=None):
+    """
+    Converts world coordinates to pixel coordinates in the rendered image.
+    
+    Parameters:
+    - world_coords: A mathutils.Vector representing the world coordinates (X, Y, Z).
+    - camera: (Optional) The camera object. If None, the active camera in the scene is used.
+
+    Returns:
+    - (pixel_x, pixel_y): The pixel coordinates corresponding to the given world coordinates.
+    """
+    if camera is None:
+        camera = bpy.context.scene.camera
+
+    # Get the camera's world-to-camera transformation matrix
+    view_matrix = camera.matrix_world.inverted()
+
+    # Transform the world coordinates to camera coordinates
+    P_camera = view_matrix @ world_coords
+
+    # Get the camera's projection matrix
+    projection_matrix = camera.calc_matrix_properties()
+
+    # Project camera coordinates into normalized device coordinates (NDC)
+    P_projected = projection_matrix @ P_camera
+
+    # Normalize the coordinates (to NDC)
+    P_normalized = P_projected.xyz / P_projected.w
+
+    # Get the render resolution
+    width = bpy.context.scene.render.resolution_x
+    height = bpy.context.scene.render.resolution_y
+
+    # Convert NDC to pixel coordinates
+    pixel_x = (P_normalized[0] + 1) * 0.5 * width
+    pixel_y = (P_normalized[1] + 1) * 0.5 * height
+
+    return pixel_x, pixel_y
 
 def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
@@ -180,6 +247,9 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                         #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
 
                         bpy.context.view_layer.update()
+                        x,y=coordinates=world_to_pixel(character_obj.location)
+                        x_1,y_1=world_to_pixel((desired_location[0], desired_location[1], character_obj.location.z + scale))
+                        print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
                     toggle_hide(character_obj,True)
                     character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scale)
