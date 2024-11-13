@@ -249,6 +249,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                         bpy.context.view_layer.update()
                         x,y=coordinates=world_to_pixel(character_obj.location)
                         x_1,y_1=world_to_pixel((desired_location[0], desired_location[1], character_obj.location.z + scale))
+                        add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
                         print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
                     toggle_hide(character_obj,True)
