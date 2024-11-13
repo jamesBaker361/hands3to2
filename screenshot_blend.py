@@ -4,6 +4,8 @@ import math
 import os
 import mathutils
 from mathutils import Vector
+import bpy_extras
+import numpy as np
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
 sys.path.append("/Users/jbaker15/Desktop/hands3to2")
@@ -14,7 +16,7 @@ from PIL import Image, ImageDraw
 # Set camera parameters
 camera = bpy.context.scene.camera
 light=bpy.data.objects["MainLight"]
-
+scene = bpy.context.scene
 
 #light.data.shadow_soft_size=10
 
@@ -29,7 +31,7 @@ else:
     print(f"Running on another OS {platform.system()}")
 
 
-def add_dots_to_image(image_path, coords1, coords2, radius=5):
+def add_dots_to_image(image_path, coords1, coords2, radius=15):
     """
     Opens an image, adds two dots at specified coordinates, and saves the modified image.
     
@@ -75,7 +77,11 @@ def world_to_pixel(world_coords, camera=None):
     P_camera = view_matrix @ world_coords
 
     # Get the camera's projection matrix
-    projection_matrix = camera.calc_matrix_properties()
+    # Get the camera's projection matrix (perspective matrix)
+    projection_matrix = camera.data.calc_matrix_camera(
+        bpy.context.scene.render.resolution_x, 
+        bpy.context.scene.render.resolution_y
+    )
 
     # Project camera coordinates into normalized device coordinates (NDC)
     P_projected = projection_matrix @ P_camera
@@ -92,6 +98,84 @@ def world_to_pixel(world_coords, camera=None):
     pixel_y = (P_normalized[1] + 1) * 0.5 * height
 
     return pixel_x, pixel_y
+
+
+def world_to_camera_image_coords(world_coords, camera, scene):
+    
+    #coords=bpy_extras.object_utils.world_to_camera_view(scene, camera, world_coords)
+    # Get camera matrix K (intrinsic matrix)
+    res_x = scene.render.resolution_x
+    res_y = scene.render.resolution_y
+    scale = scene.render.resolution_percentage / 100
+    aspect_ratio = res_x / res_y
+
+    focal_length = camera.data.lens  # Focal length in mm
+    sensor_width = camera.data.sensor_width
+    sensor_height = camera.data.sensor_height if camera.data.sensor_fit == 'VERTICAL' else sensor_width / aspect_ratio
+
+    # Calculate intrinsic matrix K
+    s_u = res_x * scale / sensor_width
+    s_v = res_y * scale / sensor_height
+    c_x = res_x * scale / 2 * (1 + camera.data.shift_x)
+    c_y = res_y * scale / 2 * (1 + camera.data.shift_y)
+
+    K = np.array([
+        [s_u * focal_length, 0, c_x],
+        [0, s_v * focal_length, c_y],
+        [0, 0, 1]
+    ])
+
+    # Convert world coordinates to camera coordinates
+    location, rotation = camera.matrix_world.decompose()[0:2]
+    rotation_matrix = rotation.to_matrix().to_4x4()
+    translation_matrix = np.array(location).reshape((3, 1))
+    extrinsic_matrix = np.array(rotation_matrix)[:3, :3].T @ (np.eye(3) - translation_matrix)
+
+    world_coords=np.array(world_coords)
+    # Convert world_coords to homogeneous coordinates
+    world_coords_h = np.hstack((world_coords, np.ones((world_coords.shape[0]))))
+
+    # Transform to camera coordinates
+    camera_coords = extrinsic_matrix @ world_coords_h.T
+
+    # Project to 2D normalized image coordinates
+    normalized_coords = camera_coords[:2] / camera_coords[2]
+
+    # Map normalized image coordinates to pixel coordinates using K
+    image_coords = K[:2, :2] @ normalized_coords + K[:2, 2:]
+
+    # Return image coordinates
+    return image_coords.T
+
+def world_to_screen(world_coords):
+    """
+    Convert world coordinates to screen coordinates using the camera.
+
+    Parameters:
+    - world_coords: A mathutils.Vector with world coordinates (X, Y, Z).
+
+    Returns:
+    - (x, y): Screen coordinates (2D).
+    """
+    # Get the active camera
+    camera = bpy.context.scene.camera
+
+    # Get the 3D region and region_data (view3d context)
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+
+    # Convert world coordinates to camera view coordinates
+    view_coords = bpy_extras.object_utils.world_to_camera_view(
+        bpy.context.scene, camera, Vector(world_coords)
+    )
+
+    # Convert camera view coordinates to 2D screen space
+    screen_coords = mathutils.Vector((
+        (view_coords.x + 1.0) * 0.5 * region.width,  # Normalize X to screen space
+        (view_coords.y + 1.0) * 0.5 * region.height  # Normalize Y to screen space
+    ))
+
+    return screen_coords
 
 def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
@@ -187,7 +271,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                 if using_mac:
                     folder=f"/Users/jbaker15/Desktop/hands3to2/{scene_mesh_name}/{character}"
                 else:
-                    folder=f"\\Users\\jlbak\\hands3to2\\{scene_mesh_name}\\{character}"
+                    folder=f"\\Users\\jlbak\\hands3to2\\blender_images\\{scene_mesh_name}\\{character}"
                 os.makedirs(folder,exist_ok=True)
                 character_obj=bpy.data.objects[character]
                 rescale_to_unit_box(character_obj)
@@ -247,8 +331,8 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                         #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
 
                         bpy.context.view_layer.update()
-                        x,y=coordinates=world_to_pixel(character_obj.location)
-                        x_1,y_1=world_to_pixel((desired_location[0], desired_location[1], character_obj.location.z + scale))
+                        x,y=world_to_screen(desired_location)
+                        x_1,y_1=world_to_screen((desired_location[0], desired_location[1], desired_location[2] + scale))
                         add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
                         print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
