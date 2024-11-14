@@ -56,96 +56,7 @@ def add_dots_to_image(image_path, coords1, coords2, radius=15):
     # Save the modified image
     image.save(image_path)
 
-def world_to_pixel(world_coords, camera=None):
-    """
-    Converts world coordinates to pixel coordinates in the rendered image.
-    
-    Parameters:
-    - world_coords: A mathutils.Vector representing the world coordinates (X, Y, Z).
-    - camera: (Optional) The camera object. If None, the active camera in the scene is used.
 
-    Returns:
-    - (pixel_x, pixel_y): The pixel coordinates corresponding to the given world coordinates.
-    """
-    if camera is None:
-        camera = bpy.context.scene.camera
-
-    # Get the camera's world-to-camera transformation matrix
-    view_matrix = camera.matrix_world.inverted()
-
-    # Transform the world coordinates to camera coordinates
-    P_camera = view_matrix @ world_coords
-
-    # Get the camera's projection matrix
-    # Get the camera's projection matrix (perspective matrix)
-    projection_matrix = camera.data.calc_matrix_camera(
-        bpy.context.scene.render.resolution_x, 
-        bpy.context.scene.render.resolution_y
-    )
-
-    # Project camera coordinates into normalized device coordinates (NDC)
-    P_projected = projection_matrix @ P_camera
-
-    # Normalize the coordinates (to NDC)
-    P_normalized = P_projected.xyz / P_projected.w
-
-    # Get the render resolution
-    width = bpy.context.scene.render.resolution_x
-    height = bpy.context.scene.render.resolution_y
-
-    # Convert NDC to pixel coordinates
-    pixel_x = (P_normalized[0] + 1) * 0.5 * width
-    pixel_y = (P_normalized[1] + 1) * 0.5 * height
-
-    return pixel_x, pixel_y
-
-
-def world_to_camera_image_coords(world_coords, camera, scene):
-    
-    #coords=bpy_extras.object_utils.world_to_camera_view(scene, camera, world_coords)
-    # Get camera matrix K (intrinsic matrix)
-    res_x = scene.render.resolution_x
-    res_y = scene.render.resolution_y
-    scale = scene.render.resolution_percentage / 100
-    aspect_ratio = res_x / res_y
-
-    focal_length = camera.data.lens  # Focal length in mm
-    sensor_width = camera.data.sensor_width
-    sensor_height = camera.data.sensor_height if camera.data.sensor_fit == 'VERTICAL' else sensor_width / aspect_ratio
-
-    # Calculate intrinsic matrix K
-    s_u = res_x * scale / sensor_width
-    s_v = res_y * scale / sensor_height
-    c_x = res_x * scale / 2 * (1 + camera.data.shift_x)
-    c_y = res_y * scale / 2 * (1 + camera.data.shift_y)
-
-    K = np.array([
-        [s_u * focal_length, 0, c_x],
-        [0, s_v * focal_length, c_y],
-        [0, 0, 1]
-    ])
-
-    # Convert world coordinates to camera coordinates
-    location, rotation = camera.matrix_world.decompose()[0:2]
-    rotation_matrix = rotation.to_matrix().to_4x4()
-    translation_matrix = np.array(location).reshape((3, 1))
-    extrinsic_matrix = np.array(rotation_matrix)[:3, :3].T @ (np.eye(3) - translation_matrix)
-
-    world_coords=np.array(world_coords)
-    # Convert world_coords to homogeneous coordinates
-    world_coords_h = np.hstack((world_coords, np.ones((world_coords.shape[0]))))
-
-    # Transform to camera coordinates
-    camera_coords = extrinsic_matrix @ world_coords_h.T
-
-    # Project to 2D normalized image coordinates
-    normalized_coords = camera_coords[:2] / camera_coords[2]
-
-    # Map normalized image coordinates to pixel coordinates using K
-    image_coords = K[:2, :2] @ normalized_coords + K[:2, 2:]
-
-    # Return image coordinates
-    return image_coords.T
 
 def world_to_screen(world_coords):
     """
@@ -174,8 +85,10 @@ def world_to_screen(world_coords):
         (view_coords.x + 1.0) * 0.5 * region.width,  # Normalize X to screen space
         (view_coords.y + 1.0) * 0.5 * region.height  # Normalize Y to screen space
     ))
+    
+    print(view_coords)
 
-    return screen_coords
+    return view_coords.x,view_coords.y
 
 def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
