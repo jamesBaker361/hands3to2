@@ -31,7 +31,7 @@ else:
     print(f"Running on another OS {platform.system()}")
 
 
-def add_dots_to_image(image_path, coords1, coords2, radius=15):
+def add_dots_to_image(image_path, coords1, coords2, radius=5):
     """
     Opens an image, adds two dots at specified coordinates, and saves the modified image.
     
@@ -44,8 +44,11 @@ def add_dots_to_image(image_path, coords1, coords2, radius=15):
     # Open the image
     image = Image.open(image_path)
 
+    width, height = image.size
     # Create a drawing context
     draw = ImageDraw.Draw(image)
+    coords1=[width*coords1[0], height*coords1[1]]
+    coords2=[width*coords2[0], height*coords2[1]]
 
     # Draw the first dot (coords1)
     draw.ellipse([coords1[0] - radius, coords1[1] - radius, coords1[0] + radius, coords1[1] + radius], fill="red")
@@ -88,7 +91,7 @@ def world_to_screen(world_coords):
     
     print(view_coords)
 
-    return view_coords.x,view_coords.y
+    return (view_coords.x,1-view_coords.y)
 
 def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
@@ -246,7 +249,7 @@ for scene_mesh_name,scene_params in scene_camera_params_dict.items():
                         bpy.context.view_layer.update()
                         x,y=world_to_screen(desired_location)
                         x_1,y_1=world_to_screen((desired_location[0], desired_location[1], desired_location[2] + scale))
-                        add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
+                        #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
                         print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
                     toggle_hide(character_obj,True)
