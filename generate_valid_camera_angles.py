@@ -18,7 +18,7 @@ def is_unobstructed(camera_location, target_location):
     # If result[0] is True, it means the ray hit something, and the view is obstructed
     return not result[0]
 
-def generate_camera_positions(object_location, radius, angle_step, min_distance, max_distance):
+def generate_camera_positions(object_location, radius, angle_step):
     positions = []
     
     # Loop through different angles to generate camera positions around the object
@@ -65,10 +65,8 @@ constraint.up_axis = 'UP_Y'  # Y-axis is usually the upward direction
 
 radius = 2  # The distance from the object
 angle_step = 30  # Step size in degrees for azimuth and elevation
-min_distance = 5  # Minimum distance the camera can be placed from the object
-max_distance = 50  # Maximum distance the camera can be placed from the object
 
-valid_camera_positions = generate_camera_positions(object_location, radius, angle_step, min_distance, max_distance)
+valid_camera_positions = generate_camera_positions(object_location, radius, angle_step)
 reset("budgie",False)
 # Create cameras at valid positions and point them at the object
 for i, cam_location in enumerate(valid_camera_positions):
