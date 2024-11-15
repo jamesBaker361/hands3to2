@@ -6,11 +6,15 @@ import mathutils
 from mathutils import Vector
 import bpy_extras
 import numpy as np
+import re
 import sys
-from generate_valid_camera_angles import reset
 sys.path.append("\\Users\\jlbak\\hands3to2")
 sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
+from generate_valid_camera_angles import reset,generate_camera_positions,SHITTY
+from math import degrees
+
+
 import re
 import platform
 from PIL import Image, ImageDraw
@@ -25,11 +29,15 @@ using_mac=True
 
 if platform.system() == "Darwin":
     print("Running on macOS")
+    folder="/home/jlb638/hands3to2/blender_images"
 elif platform.system() == "Windows":
     print("Running on Windows")
     using_mac=False
+    folder="\\Users\\jlbak\\hands3to2\\blender_images\\"
 else:
     print(f"Running on another OS {platform.system()}")
+
+os.makedirs(folder,exist_ok=True)
 
 
 def add_dots_to_image(image_path, coords1, coords2, radius=5):
@@ -131,101 +139,134 @@ new_camera_params = {
             "angle_x":0.90,
             "angle_y":0
 }
+
+def cleanup(substring:str):
+    for obj in bpy.data.objects:
+        if substring in obj.name:
+            # Deselect all objects and select the target object
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True)
+            
+            # Delete the selected object
+            bpy.ops.object.delete()
+            print(f"Deleted: {obj.name}")
+
+
+scale_samples=5
+light_samples=5
+angle_step=30
+distance_samples=5
+character_angle_step=120
+limit_per_distance=10
+collection_name="CameraCollection"
+if collection_name in bpy.data.collections:
+    # Set new_collection to the existing collection
+    new_collection = bpy.data.collections[collection_name]
+    print(f"Collection '{collection_name}' already exists.")
+else:
+    # Create a new collection
+    new_collection = bpy.data.collections.new(collection_name)
+    bpy.context.scene.collection.children.link(new_collection)
+    print(f"Collection '{collection_name}' created.")
+
+tracker_collection_name="TrackerCollection"
+if tracker_collection_name in bpy.data.collections:
+    # Set new_collection to the existing collection
+    tracker_collection = bpy.data.collections[tracker_collection_name]
+    print(f"Collection '{tracker_collection_name}' already exists.")
+else:
+    # Create a new collection
+    tracker_collection = bpy.data.collections.new(tracker_collection_name)
+    bpy.context.scene.collection.children.link(tracker_collection)
+    print(f"Collection '{tracker_collection_name}' created.")
+#cleanup(SHITTY)
 print([c for c in bpy.data.collections])
 for obj_name in [k for k in character_dict.keys()]+[k for k in scene_camera_params_dict.keys()]:
     reset(obj_name,True)
 bpy.context.view_layer.update()
-for scene_mesh_name,scene_params in scene_camera_params_dict.items():
+class BreakOutException(Exception):
+    pass
+try:
+    for scene_mesh_name,scene_params in scene_camera_params_dict.items():
+        reset(scene_mesh_name,False)
+        for s,location in enumerate(scene_params.object_location_list):
+            
+            for scale_step in range(scale_samples+1):
+                scale=scene_params.scale_range[0]+(scene_params.scale_range[1]-scene_params.scale_range[0])*(float(scale_step)/float(scale_samples))
+                for constraint in camera.constraints:
+                    camera.constraints.remove(constraint)
+                print(f"scale {scale}")
+                bpy.ops.object.empty_add(type='PLAIN_AXES', location=Vector((location[0], location[1], location[2]+scale/2)))
+                empty_target = bpy.context.object
+                empty_target.location=location
+                object_name="TrackingEmpty"
+                empty_target.name = object_name  # Name the Empty for easier identification
+                for collection in empty_target.users_collection:
+                    collection.objects.unlink(empty_target)
+                    
+                # Link the object to the new collection
+                new_collection.objects.link(empty_target)
+
+                constraint = camera.constraints.new(type='TRACK_TO')
+                constraint.target = empty_target
+                constraint.track_axis = 'TRACK_NEGATIVE_Z'  # Camera points down -Z by default
+                constraint.up_axis = 'UP_Y'  # Y-axis is usually the upward direction
+                for distance_step in range(distance_samples+1):
+                    start=0
+                    distance=scene_params.distance_range[0]+(scene_params.distance_range[1]-scene_params.distance_range[0])*(float(distance_step)/float(distance_samples))
+                    print(f"\t distance {distance}")
+                    location_vector=Vector((location[0],location[1],location[2]))
+                    camera_position_list=generate_camera_positions(location_vector,distance,angle_step,scale,False,new_collection)
+                    for light_step in range(light_samples+1):
+                        light_energy=scene_params.light_range[0]+(scene_params.light_range[1]-scene_params.light_range[0])*(light_step/light_samples)
+                        light.data.energy=light_energy
+                        print(f"\t\t light {light_energy}")
+                        for c,camera_pos in enumerate(camera_position_list):
+                            print(f"\t\t\tposition {camera_pos}")
+                            camera.location=camera_pos
+                            for character in character_dict:
+                                
+                                print(f"\t\t\t\t character{character}")
+                                reset(character,False)
+                                character_obj=bpy.data.objects[character]
+                                character_obj.scale=(scale,scale,scale)
+                                character_obj.rotation_euler=character_dict[character]
+                                character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
+                                # Adjust the object's location based on its bottom point
+                                bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+
+                                # Offset the object's location so its bottom is at desired_location
+                                offset_z = location[2] - min_z
+                                character_obj.location = (location[0], location[1], character_obj.location.z + offset_z)
+                                for rotation in range(0,360,character_angle_step):
+                                    character_obj.rotation_euler.rotate_axis("Y",math.radians(character_angle_step))
+                                    os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
+                                    start+=1
+                                    if start>limit_per_distance:
+                                        continue
+
+                                    bpy.context.scene.render.filepath = f"{folder}\\{scene_mesh_name}\\{character}\\{distance}_{s}_{c}_{light_energy}_{character_angle_step}_{scale}.png"
+                                    bpy.context.scene.render.image_settings.file_format = 'PNG'
+                                    
+
+                                    # Render and save the screenshot from the camera's perspective
+                                    bpy.ops.render.render(write_still=True)
+                                    #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
+
+                                    bpy.context.view_layer.update()
+                                    x,y=world_to_screen(location)
+                                    x_1,y_1=world_to_screen((location[0], location[1], location[2] + scale))
+                                    #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
+                                    print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
+                                    print("Screenshot saved to:", bpy.context.scene.render.filepath)
+                                    #raise BreakOutException
+                                reset(character,True)
+                
+                #cleanup(object_name)
+                
+        reset(scene_mesh_name,True)
+except BreakOutException:
     reset(scene_mesh_name,False)
-    for s,camera_params in enumerate(scene_params.camera_locations_and_rotations):
-        
-        # Apply the new camera parameters
-        camera.location = camera_params[:3]
-        camera.rotation_euler = camera_params[3:]
-        camera.data.lens = new_camera_params["focal_length"]
-        camera.data.sensor_width = new_camera_params["sensor_width"]
-        camera.data.sensor_height=new_camera_params["sensor_height"]
-        camera.data.clip_start = new_camera_params["clip_start"]
-        camera.data.clip_end = new_camera_params["clip_end"]
-        #camera.output
-        #camera.data.angle_x=new_camera_params["angle_x"]
-        #camera.data.angle_y=new_camera_params["angle_y"]
-        
-        
-        step=45
-        for l,light_params in enumerate(scene_params.light_locations_and_rotations):
-            for character in character_dict:
 
-
-                if using_mac:
-                    folder=f"/Users/jbaker15/Desktop/hands3to2/{scene_mesh_name}/{character}"
-                else:
-                    folder=f"\\Users\\jlbak\\hands3to2\\blender_images\\{scene_mesh_name}\\{character}"
-                os.makedirs(folder,exist_ok=True)
-                character_obj=bpy.data.objects[character]
-                rescale_to_unit_box(character_obj)
-                for scale in scene_params.object_scale:
-                    character_obj.scale=(scale,scale,scale)
-                    character_obj.rotation_euler=character_dict[character]
-
-                    # Calculate the direction from the object to the camera in the XY plane
-                    direction_to_camera = bpy.context.scene.camera.location - character_obj.location
-                    direction_to_camera.z = 0  # Ignore the Z component to only rotate in the XY plane
-
-                    # Normalize the direction vector
-                    direction_to_camera.normalize()
-
-                    # Get the angle between the object's current forward direction and the direction to the camera
-                    #angle = math.atan2(direction_to_camera.y, direction_to_camera.x)
-
-                    # Set the object's rotation around the Z axis
-                    character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
-
-                    # Update the scene
-                    bpy.context.view_layer.update()
-
-
-                    toggle_hide(character_obj,False)
-
-                    desired_location=scene_params.object_location_and_rotation[:3]
-                    # Adjust the object's location based on its bottom point
-                    bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                    min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-
-                    # Offset the object's location so its bottom is at desired_location
-                    offset_z = desired_location[2] - min_z
-                    character_obj.location = (desired_location[0], desired_location[1], character_obj.location.z + offset_z)
-
-                    #character_obj.location=scene_params.object_location_and_rotation[:3]
-                    #character_obj.rotation_euler=scene_params.object_location_and_rotation[3:]
-                    
-                    rotation_degrees = (0, step, 0)  # Set rotation in radians (X, Y, Z)
-                    #light.location=tuple([p for p in light_params[:3]])
-                    #light.rotation_euler=tuple([r for r in light_params[3:6]])
-                    light.data.energy=light_params[6]
-                        #rotation_radians = tuple(math.radians(deg) for deg in rotation_degrees)
-                    rotation_radians=mathutils.Euler([math.radians(deg) for deg in rotation_degrees], 'XYZ')
-                    for angle in range(0,90,step):
-                        
-                    
-                        character_obj.rotation_euler.rotate_axis("Y",math.radians(step))
-
-                        # Set render settings for the screenshot
-                        bpy.context.scene.render.filepath = f"{folder}\\{s}_{l}_{angle}_{scale}.png"
-                        bpy.context.scene.render.image_settings.file_format = 'PNG'
-                        
-
-                        # Render and save the screenshot from the camera's perspective
-                        bpy.ops.render.render(write_still=True)
-                        #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
-
-                        bpy.context.view_layer.update()
-                        x,y=world_to_screen(desired_location)
-                        x_1,y_1=world_to_screen((desired_location[0], desired_location[1], desired_location[2] + scale))
-                        #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
-                        print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
-                        print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                    toggle_hide(character_obj,True)
-                    character_obj.location = (character_obj.location[0], character_obj.location[1], character_obj.location[2] + camera.location[2]+100*scale)
-                    #character_obj.scale=(0.0000001,0.0000001,0.0000001)
-    reset(scene_mesh_name,True)
+reset(scene_mesh_name,False)

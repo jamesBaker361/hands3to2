@@ -2,6 +2,7 @@ import bpy
 import math
 import mathutils
 from mathutils import Vector
+import re
 import os
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
@@ -9,6 +10,7 @@ folder="\\Users\\jlbak\\hands3to2\\camera_test\\"
 os.makedirs(folder,exist_ok=True)
 camera = bpy.context.scene.camera
 
+SHITTY="shitty_camera"
 
 def toggle_hide(obj,value:bool):
     # Check if the obj is a collection
@@ -40,13 +42,16 @@ def reset(obj_name:str,value:bool):
 
 def is_unobstructed(camera_location, target_location):
     # Cast a ray from the camera to the target
+    #print(f"\t\tobstruction {target_location} - {camera_location} = {target_location - camera_location}")
     direction = (target_location - camera_location).normalized()
     result = bpy.context.scene.ray_cast(bpy.context.view_layer.depsgraph, camera_location, direction)
     
     # If result[0] is True, it means the ray hit something, and the view is obstructed
     return not result[0]
 
-def generate_camera_positions(object_location, radius, angle_step,scale=1):
+
+
+def generate_camera_positions(object_location, radius, angle_step,scale=1,make_cameras:bool=False,new_collection=None):
     positions = []
     
     # Loop through different angles to generate camera positions around the object
@@ -56,6 +61,8 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1):
             # Convert spherical coordinates to Cartesian coordinates
             theta = math.radians(azimuth)
             phi = math.radians(elevation)
+
+            #print(f"\t\t{theta} {phi}")
             
             
             
@@ -65,7 +72,10 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1):
             y = object_location.y + radius * math.cos(phi) * math.cos(theta)
             z = object_location.z + radius * math.sin(phi)
             camera_location = Vector((x, y, z))
+            
             direction = object_location - camera_location
+
+            #print(f"{object_location} - {camera_location} = {direction}")
             rot_quat = direction.to_track_quat('-Z', 'Y')
             #camera.rotation_euler = rot_quat.to_euler()
             
@@ -74,7 +84,25 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1):
             location_above=(Vector((object_location.x,object_location.y,object_location.z+scale)))
             location_above_unobstructed=is_unobstructed(camera_location,location_above)
 
-            if is_unobstructed(location_unobstructed, location_above_unobstructed):
+            if make_cameras:
+                bpy.ops.object.camera_add(location=camera_location)
+                new_camera = bpy.context.object  # Get the new camera object
+                for collection in new_camera.users_collection:
+                    collection.objects.unlink(new_camera)
+                    
+                # Link the object to the new collection
+                new_collection.objects.link(new_camera)
+                
+                # Rename the camera to distinguish it from others
+                new_camera.name = f"{SHITTY}"
+                
+                # (Optional) Set any properties or constraints for each camera here
+                # Example: Set rotation, focal length, etc.
+                new_camera.location = camera_location  # Adjust as needed
+                #new_camera.rotation_euler=camera.rotation_euler
+
+
+            if location_unobstructed and location_above_unobstructed:
                 # Store valid camera positions
                 positions.append(camera_location)
                 
