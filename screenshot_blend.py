@@ -152,12 +152,8 @@ def cleanup(substring:str):
             print(f"Deleted: {obj.name}")
 
 
-scale_samples=5
-light_samples=5
-angle_step=30
-distance_samples=5
-character_angle_step=120
-limit_per_distance=10
+from config import *
+
 collection_name="CameraCollection"
 if collection_name in bpy.data.collections:
     # Set new_collection to the existing collection
