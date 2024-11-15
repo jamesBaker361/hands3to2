@@ -7,6 +7,7 @@ from mathutils import Vector
 import bpy_extras
 import numpy as np
 import sys
+from generate_valid_camera_angles import reset
 sys.path.append("\\Users\\jlbak\\hands3to2")
 sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
@@ -92,34 +93,6 @@ def world_to_screen(world_coords):
     print(view_coords)
 
     return (view_coords.x,1-view_coords.y)
-
-def toggle_hide(obj,value:bool):
-    # Check if the obj is a collection
-    if isinstance(obj, bpy.types.Collection):
-        # Recursively call toggle_hide on each child in the collection
-        obj.hide_viewport=value
-        obj.hide_render=value
-        for child in obj.objects:
-            toggle_hide(child,value)
-        for sub_collection in obj.children:
-            toggle_hide(sub_collection,value)
-    else:
-        # Toggle hide_viewport for individual objects
-        obj.hide_viewport=value
-        obj.hide_render=value
-    bpy.context.view_layer.update()
-
-def reset(obj_name:str,value:bool):
-    print(f"resetting {obj_name} to {value}")
-    obj_name=re.sub(r'\d+', '', obj_name)
-    try:
-        bpy.data.objects[obj_name].hide_viewport=value
-        bpy.data.objects[obj_name].hide_render=value
-    except:
-        collection=bpy.data.collections[obj_name]
-        collection.hide_viewport=value
-        collection.hide_render=value
-        toggle_hide(collection,value)
 
 def rescale_to_unit_box(obj):
     # Make sure the object is selected and active

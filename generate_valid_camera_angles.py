@@ -6,9 +6,37 @@ import os
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
 folder="\\Users\\jlbak\\hands3to2\\camera_test\\"
-from screenshot_blend import reset
 os.makedirs(folder,exist_ok=True)
 camera = bpy.context.scene.camera
+
+
+def toggle_hide(obj,value:bool):
+    # Check if the obj is a collection
+    if isinstance(obj, bpy.types.Collection):
+        # Recursively call toggle_hide on each child in the collection
+        obj.hide_viewport=value
+        obj.hide_render=value
+        for child in obj.objects:
+            toggle_hide(child,value)
+        for sub_collection in obj.children:
+            toggle_hide(sub_collection,value)
+    else:
+        # Toggle hide_viewport for individual objects
+        obj.hide_viewport=value
+        obj.hide_render=value
+    bpy.context.view_layer.update()
+
+def reset(obj_name:str,value:bool):
+    print(f"resetting {obj_name} to {value}")
+    obj_name=re.sub(r'\d+', '', obj_name)
+    try:
+        bpy.data.objects[obj_name].hide_viewport=value
+        bpy.data.objects[obj_name].hide_render=value
+    except:
+        collection=bpy.data.collections[obj_name]
+        collection.hide_viewport=value
+        collection.hide_render=value
+        toggle_hide(collection,value)
 
 def is_unobstructed(camera_location, target_location):
     # Cast a ray from the camera to the target
