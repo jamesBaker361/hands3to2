@@ -246,7 +246,7 @@ try:
                                     if start>limit_per_distance:
                                         continue
 
-                                    bpy.context.scene.render.filepath = f"{folder}\\{scene_mesh_name}\\{character}\\{distance}_{s}_{c}_{light_energy}_{character_angle_step}_{scale}.png"
+                                    bpy.context.scene.render.filepath = f"{folder}\\{scene_mesh_name}\\{character}\\{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
                                     bpy.context.scene.render.image_settings.file_format = 'PNG'
                                     
 
