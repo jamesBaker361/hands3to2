@@ -133,7 +133,7 @@ def rescale_to_unit_box(obj):
 
 def quadrant_angle(x, y):
     # Calculate base angle in degrees
-    theta = math.degrees(math.atan2(abs(y), abs(x)))
+    theta = math.degrees(math.atan2(abs(x), abs(y)))
 
     # Apply quadrant-based conditions
     if x < 0 and y > 0:
@@ -261,6 +261,9 @@ try:
                                 camera_object_distance=camera.location-character_obj.location
 
                                 relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
+
+                                print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
+                                print(f"relative rotation {relative_rotation}")
 
                                 
 
