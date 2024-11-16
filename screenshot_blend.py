@@ -13,6 +13,7 @@ sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
 from generate_valid_camera_angles import reset,generate_camera_positions,SHITTY
 from math import degrees
+from config import *
 
 
 import re
@@ -152,7 +153,7 @@ def cleanup(substring:str):
             print(f"Deleted: {obj.name}")
 
 
-from config import *
+
 
 collection_name="CameraCollection"
 if collection_name in bpy.data.collections:
@@ -228,7 +229,7 @@ try:
                                 character_obj=bpy.data.objects[character]
                                 print("inital charcater location",character_obj.location)
                                 character_obj.scale=(scale,scale,scale)
-                                character_obj.rotation_euler=character_dict[character]
+                                character_obj.rotation_euler=character_dict[character].rotation
                                 character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
                                 # Adjust the object's location based on its bottom point
                                 bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
@@ -237,9 +238,21 @@ try:
                                 # Offset the object's location so its bottom is at desired_location
                                 offset_z = character_obj.location.z - min_z
                                 character_obj.location = (location[0], location[1],  location[2]+ offset_z)
+                                axis=character_dict[character].axis
+
+                                if axis=="X":
+                                    # Calculate relative rotation on the Z-axis
+                                    relative_rotation = character_obj.rotation_euler.x - camera.rotation_euler.z
+                                elif axis=="Y":
+                                    relative_rotation = character_obj.rotation_euler.y - camera.rotation_euler.z
+                                elif axis=="Z":
+                                    relative_rotation = character_obj.rotation_euler.z - camera.rotation_euler.z
+
+                                # Rotate the object around the Z-axis to align with the camera
+                                character_obj.rotation_euler.rotate_axis(axis, -relative_rotation)  # Apply the opposite to align
                                 for rotation in range(0,360,character_angle_step):
                                     print("character location",character_obj.location)
-                                    character_obj.rotation_euler.rotate_axis("Z",math.radians(character_angle_step))
+                                    character_obj.rotation_euler.rotate_axis(character_dict[character].axis,math.radians(character_angle_step))
                                     os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
                                     start+=1
                                     if start>limit_per_distance:
