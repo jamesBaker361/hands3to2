@@ -98,7 +98,7 @@ def world_to_screen(world_coords):
         (view_coords.y + 1.0) * 0.5 * region.height  # Normalize Y to screen space
     ))
     
-    print(view_coords)
+    print("view coords ",view_coords)
 
     return (view_coords.x,1-view_coords.y)
 
@@ -224,7 +224,9 @@ try:
                                 
                                 print(f"\t\t\t\t character{character}")
                                 reset(character,False)
+                                
                                 character_obj=bpy.data.objects[character]
+                                print("inital charcater location",character_obj.location)
                                 character_obj.scale=(scale,scale,scale)
                                 character_obj.rotation_euler=character_dict[character]
                                 character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
@@ -233,14 +235,15 @@ try:
                                 min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
 
                                 # Offset the object's location so its bottom is at desired_location
-                                offset_z = location[2] - min_z
-                                character_obj.location = (location[0], location[1], character_obj.location.z + offset_z)
+                                offset_z = character_obj.location.z - min_z
+                                character_obj.location = (location[0], location[1],  location[2]+ offset_z)
                                 for rotation in range(0,360,character_angle_step):
+                                    print("character location",character_obj.location)
                                     character_obj.rotation_euler.rotate_axis("Z",math.radians(character_angle_step))
                                     os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
                                     start+=1
                                     if start>limit_per_distance:
-                                        continue
+                                        raise BreakOutException
 
                                     bpy.context.scene.render.filepath = f"{folder}\\{scene_mesh_name}\\{character}\\{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
                                     bpy.context.scene.render.image_settings.file_format = 'PNG'
