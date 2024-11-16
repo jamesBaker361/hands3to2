@@ -129,6 +129,24 @@ def rescale_to_unit_box(obj):
     # Apply the scale transformation
     bpy.ops.object.transform_apply(scale=True)
 
+
+
+def quadrant_angle(x, y):
+    # Calculate base angle in degrees
+    theta = math.degrees(math.atan2(abs(y), abs(x)))
+
+    # Apply quadrant-based conditions
+    if x < 0 and y > 0:
+        return theta
+    elif x < 0 and y < 0:
+        return 180 - theta
+    elif x > 0 and y < 0:
+        return 180 + theta
+    elif x > 0 and y > 0:
+        return 360 - theta
+    else:
+        return 0  # Handle the origin if necessary
+
 new_camera_params = {
            # "location": (5.0, -5.0, 5.0),   # Change to your desired location
            # "rotation_euler": (1.0, 0.0, 0.78),  # Change to your desired rotation in radians
@@ -240,19 +258,17 @@ try:
                                 character_obj.location = (location[0], location[1],  location[2]+ offset_z)
                                 axis=character_dict[character].axis
 
-                                if axis=="X":
-                                    # Calculate relative rotation on the Z-axis
-                                    relative_rotation = character_obj.rotation_euler.x - camera.rotation_euler.z
-                                elif axis=="Y":
-                                    relative_rotation = character_obj.rotation_euler.y - camera.rotation_euler.z
-                                elif axis=="Z":
-                                    relative_rotation = character_obj.rotation_euler.z - camera.rotation_euler.z
+                                camera_object_distance=camera.location-character_obj.location
 
-                                # Rotate the object around the Z-axis to align with the camera
-                                character_obj.rotation_euler.rotate_axis(axis, -relative_rotation)  # Apply the opposite to align
+                                relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
+
+                                
+
+                                # Rotate the object around the axis to align with the camera
+                                character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
                                 for rotation in range(0,360,character_angle_step):
                                     print("character location",character_obj.location)
-                                    character_obj.rotation_euler.rotate_axis(character_dict[character].axis,math.radians(character_angle_step))
+                                    character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
                                     os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
                                     start+=1
                                     if start>limit_per_distance:
