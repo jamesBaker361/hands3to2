@@ -201,7 +201,7 @@ try:
                     collection.objects.unlink(empty_target)
                     
                 # Link the object to the new collection
-                new_collection.objects.link(empty_target)
+                tracker_collection.objects.link(empty_target)
 
                 constraint = camera.constraints.new(type='TRACK_TO')
                 constraint.target = empty_target
@@ -236,7 +236,7 @@ try:
                                 offset_z = location[2] - min_z
                                 character_obj.location = (location[0], location[1], character_obj.location.z + offset_z)
                                 for rotation in range(0,360,character_angle_step):
-                                    character_obj.rotation_euler.rotate_axis("Y",math.radians(character_angle_step))
+                                    character_obj.rotation_euler.rotate_axis("Z",math.radians(character_angle_step))
                                     os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
                                     start+=1
                                     if start>limit_per_distance:
