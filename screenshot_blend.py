@@ -213,7 +213,7 @@ try:
                 print(f"scale {scale}")
                 bpy.ops.object.empty_add(type='PLAIN_AXES', location=Vector((location[0], location[1], location[2]+scale/2)))
                 empty_target = bpy.context.object
-                empty_target.location=location
+                empty_target.location=(location[0],location[1],location[2]+scale/2)
                 object_name="TrackingEmpty"
                 empty_target.name = object_name  # Name the Empty for easier identification
                 for collection in empty_target.users_collection:
