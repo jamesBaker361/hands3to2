@@ -14,6 +14,8 @@ class CharacterParameters:
 
 character_dict={"budgie":CharacterParameters([math.pi/2,0,0],"Y"),"emu":CharacterParameters([math.pi/2,0,0],"Y")}
 scene_camera_params_dict={
+    
+    "office":SceneParameters([[3,3,0.765]],[0.2,1.0],[5,10],[0.5,3]),
     "room":SceneParameters([[-0.5,-1,0.11],
                             [0.5,2.2,0.41],
                             [-1,-0.25,0.21],
@@ -29,8 +31,7 @@ scene_camera_params_dict={
                             [1,-0.8,0.2],
                             [1.2,-2.05,0.37],
                             [0.5,-2.28,1.61],
-                            [0,2,0.55]],[0.2,0.4],[5,10],[1,3]),
-    "office":SceneParameters([[3,3,0.765]],[0.2,1.0],[5,10],[0.5,3])                          
+                            [0,2,0.55]],[0.2,0.4],[5,10],[1,3])                         
     }
 
 test_scene_camera_params_dict={
