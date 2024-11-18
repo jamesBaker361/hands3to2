@@ -170,7 +170,8 @@ def cleanup(substring:str):
             bpy.ops.object.delete()
             print(f"Deleted: {obj.name}")
 
-
+# import each scene, based on the filename, add it to a collection with its name, then delete it
+# also import each character
 
 
 collection_name="CameraCollection"
@@ -274,7 +275,7 @@ try:
                                     character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
                                     os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
                                     start+=1
-                                    if start>limit_per_distance:
+                                    if start>limit:
                                         raise BreakOutException
 
                                     bpy.context.scene.render.filepath = f"{folder}\\{scene_mesh_name}\\{character}\\{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
