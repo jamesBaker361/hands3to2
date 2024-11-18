@@ -3,4 +3,5 @@ light_samples=2
 angle_step=15
 distance_samples=2
 character_angle_step=30
-limit_per_distance=10
+limit=16
+limit_per_location=2

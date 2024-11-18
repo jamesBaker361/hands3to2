@@ -35,23 +35,47 @@ def reset(obj_name:str,value:bool):
         bpy.data.objects[obj_name].hide_viewport=value
         bpy.data.objects[obj_name].hide_render=value
     except:
-        collection=bpy.data.collections[obj_name]
-        collection.hide_viewport=value
-        collection.hide_render=value
-        toggle_hide(collection,value)
+        try:
+            collection=bpy.data.collections[obj_name]
+            collection.hide_viewport=value
+            collection.hide_render=value
+            toggle_hide(collection,value)
+        except KeyError:
+            print(f"{obj_name}  not found")
 
 def is_unobstructed(camera_location, target_location):
     # Cast a ray from the camera to the target
     #print(f"\t\tobstruction {target_location} - {camera_location} = {target_location - camera_location}")
     direction = (target_location - camera_location).normalized()
-    result = bpy.context.scene.ray_cast(bpy.context.view_layer.depsgraph, camera_location, direction)
-    
+    result, location, normal, index, obj, matrix = bpy.context.scene.ray_cast(bpy.context.view_layer.depsgraph, camera_location, direction)
+    if result:
+        print(f"hit {obj.name}  at location {location} camera is at {camera_location}")
     # If result[0] is True, it means the ray hit something, and the view is obstructed
-    return not result[0]
+    return not result
 
 
+def make_cylinder(location1, location2,new_collection):
+    midpoint = (location1 + location2) / 2
 
-def generate_camera_positions(object_location, radius, angle_step,scale=1,make_cameras:bool=False,new_collection=None):
+    # Calculate the distance between the two points (to set the cylinder length)
+    distance = (location2 - location1).length
+
+    # Create a cylinder
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.01, depth=distance, location=midpoint)  # Adjust radius as needed
+    cylinder = bpy.context.object
+    cylinder.name = "RulerCylinder"
+
+    # Calculate the orientation (rotation) of the cylinder to align it between the two points
+    direction = location2 - location1
+    rotation_quaternion = direction.to_track_quat('Z', 'Y')
+    cylinder.rotation_euler = rotation_quaternion.to_euler()
+    
+    for collection in cylinder.users_collection:
+        collection.objects.unlink(cylinder)
+
+    new_collection.objects.link(cylinder)
+
+def generate_camera_positions(object_location, radius, angle_step,scale=1,make_cameras:bool=False,cylinder=False,new_collection=None):
     positions = []
     
     # Loop through different angles to generate camera positions around the object
@@ -84,6 +108,8 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1,make_c
             location_above=(Vector((object_location.x,object_location.y,object_location.z+scale)))
             location_above_unobstructed=is_unobstructed(camera_location,location_above)
 
+            if cylinder:
+                make_cylinder(camera_location,object_location,new_collection)
             if make_cameras:
                 bpy.ops.object.camera_add(location=camera_location)
                 new_camera = bpy.context.object  # Get the new camera object
