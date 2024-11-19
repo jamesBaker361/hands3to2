@@ -199,9 +199,25 @@ def get_collection(collection_name:str):
 
     return new_collection
 
+def clean_collection(collection_name:str):
+    # Get the collection
+    collection = bpy.data.collections.get(collection_name)
+
+    if collection:
+        # Loop through all objects in the collection and delete them
+        for obj in collection.objects:
+            bpy.data.objects.remove(obj, do_unlink=True)
+        
+        print(f"All objects in the collection '{collection_name}' have been deleted.")
+    else:
+        print(f"Collection '{collection_name}' not found.")
+
 new_collection=get_collection(collection_name)
 tracker_collection=get_collection(tracker_collection_name)
 character_collection=get_collection(character_collection_name)
+
+clean_collection(tracker_collection_name)
+clean_collection(character_collection_name)
 
 
 testing=True
