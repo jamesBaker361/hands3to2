@@ -117,14 +117,16 @@ def rescale_to_unit_box(obj):
     max_corner = Vector((max(v[0] for v in bbox_corners),
                          max(v[1] for v in bbox_corners),
                          max(v[2] for v in bbox_corners)))
-    bbox_size = max_corner - min_corner
+    max_dimension = max(v[2] for v in bbox_corners)-min(v[2] for v in bbox_corners)
     
     # Calculate scale factor to fit in a 1x1x1 box
-    max_dimension = max(bbox_size)  # Find the largest dimension
+    #max_dimension = max(bbox_size)  # Find the largest dimension
     scale_factor = 1.0 / max_dimension
     
     # Apply scale factor
     obj.scale = (scale_factor, scale_factor, scale_factor)
+
+    print(f"scale factor is {scale_factor}")
     
     # Apply the scale transformation
     bpy.ops.object.transform_apply(scale=True)
@@ -290,7 +292,8 @@ try:
                                 
                                 character_obj=bpy.data.objects[character]
                                 print("inital charcater location",character_obj.location)
-                                character_obj.scale=(scale,scale,scale)
+                                character_obj.scale=scale *character_obj.scale
+                                #bpy.ops.object.transform_apply(scale=True)
                                 character_obj.rotation_euler=character_dict[character].rotation
                                 character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
                                 # Adjust the object's location based on its bottom point
