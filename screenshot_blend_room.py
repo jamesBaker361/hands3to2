@@ -21,10 +21,11 @@ import platform
 from PIL import Image, ImageDraw
 # Set camera parameters
 camera = bpy.context.scene.camera
+camera.data.lens = 25
 #light=bpy.data.objects["MainLight"]
 scene = bpy.context.scene
 
-#light.data.shadow_soft_size=10
+
 
 using_mac=True
 
@@ -220,6 +221,7 @@ if testing:
 
     # Set max light bounces to 2
     bpy.context.scene.cycles.max_bounces = 2
+    character_dict={"Raccoon_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
 
 else:
     # Set resolution to 128x128
@@ -310,7 +312,7 @@ try:
                                 offset_z = character_obj.location.z - min_z
                                 #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
                                 #print(f"location {character_obj.location}")
-                                character_obj.location = (location[0], location[1],  location[2]+scale/2)
+                                character_obj.location = (location[0], location[1],  location[2])
                                 #print(f"location {character_obj.location}")
                                 axis=character_dict[character].axis
 
