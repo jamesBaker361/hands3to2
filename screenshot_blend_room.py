@@ -103,7 +103,7 @@ def world_to_screen(world_coords):
 
     return (view_coords.x,1-view_coords.y)
 
-def rescale_to_unit_box(obj):
+def rescale_to_unit_box(obj,target_height=1.0):
     # Make sure the object is selected and active
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.select_all(action='DESELECT')
@@ -117,11 +117,15 @@ def rescale_to_unit_box(obj):
     max_corner = Vector((max(v[0] for v in bbox_corners),
                          max(v[1] for v in bbox_corners),
                          max(v[2] for v in bbox_corners)))
-    max_dimension = max(v[2] for v in bbox_corners)-min(v[2] for v in bbox_corners)
     
+    x_dist=max(v[0] for v in bbox_corners)-min(v[0] for v in bbox_corners)
+    y_dist=max(v[1] for v in bbox_corners)-min(v[1] for v in bbox_corners)
+    
+    max_dimension = max(v[2] for v in bbox_corners)-min(v[2] for v in bbox_corners)
+    print(f"max x {x_dist} y {y_dist} z {max_dimension}")
     # Calculate scale factor to fit in a 1x1x1 box
     #max_dimension = max(bbox_size)  # Find the largest dimension
-    scale_factor = 1.0 / max_dimension
+    scale_factor = target_height / max_dimension
     
     # Apply scale factor
     obj.scale = (scale_factor, scale_factor, scale_factor)
@@ -129,7 +133,7 @@ def rescale_to_unit_box(obj):
     print(f"scale factor is {scale_factor}")
     
     # Apply the scale transformation
-    bpy.ops.object.transform_apply(scale=True)
+    #bpy.ops.object.transform_apply(scale=True)
 
 
 
@@ -251,8 +255,10 @@ try:
     scene_mesh_name="room"
     scene_params=scene_camera_params_dict[scene_mesh_name]
     for s,location in enumerate(scene_params.object_location_list):
+        print(f" location to be set = {location}")
         location_count=0
         try:
+
             for scale_step in range(scale_samples+1):
                 scale=scene_params.scale_range[0]+(scene_params.scale_range[1]-scene_params.scale_range[0])*(float(scale_step)/float(scale_samples))
                 for constraint in camera.constraints:
@@ -287,22 +293,25 @@ try:
                             camera.location=camera_pos
                             for character in character_dict:
                                 
+                                
                                 print(f"\t\t\t\t character{character}")
                                 reset(character,False)
                                 
                                 character_obj=bpy.data.objects[character]
-                                print("inital charcater location",character_obj.location)
-                                character_obj.scale=scale *character_obj.scale
-                                #bpy.ops.object.transform_apply(scale=True)
+                                character_obj.location=(0,0,0)
+                                rescale_to_unit_box(character_obj,scale)
                                 character_obj.rotation_euler=character_dict[character].rotation
                                 character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
                                 # Adjust the object's location based on its bottom point
-                                bbox_corners = [character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
                                 min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
 
                                 # Offset the object's location so its bottom is at desired_location
                                 offset_z = character_obj.location.z - min_z
-                                character_obj.location = (location[0], location[1],  location[2]+ offset_z)
+                                #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
+                                #print(f"location {character_obj.location}")
+                                character_obj.location = (location[0], location[1],  location[2]+scale/2)
+                                #print(f"location {character_obj.location}")
                                 axis=character_dict[character].axis
 
                                 camera_object_distance=camera.location-character_obj.location

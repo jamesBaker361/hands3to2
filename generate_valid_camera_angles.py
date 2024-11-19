@@ -48,8 +48,9 @@ def is_unobstructed(camera_location, target_location):
     #print(f"\t\tobstruction {target_location} - {camera_location} = {target_location - camera_location}")
     direction = (target_location - camera_location).normalized()
     result, location, normal, index, obj, matrix = bpy.context.scene.ray_cast(bpy.context.view_layer.depsgraph, camera_location, direction)
-    if result:
-        print(f"hit {obj.name}  at location {location} camera is at {camera_location}")
+    #if result:
+        
+        #print(f"hit {obj.name}  at location {location} camera is at {camera_location}")
     # If result[0] is True, it means the ray hit something, and the view is obstructed
     return not result
 
