@@ -175,31 +175,27 @@ def cleanup(substring:str):
 
 
 collection_name="CameraCollection"
-if collection_name in bpy.data.collections:
-    # Set new_collection to the existing collection
-    new_collection = bpy.data.collections[collection_name]
-    print(f"Collection '{collection_name}' already exists.")
-else:
-    # Create a new collection
-    new_collection = bpy.data.collections.new(collection_name)
-    bpy.context.scene.collection.children.link(new_collection)
-    print(f"Collection '{collection_name}' created.")
-
 tracker_collection_name="TrackerCollection"
-if tracker_collection_name in bpy.data.collections:
-    # Set new_collection to the existing collection
-    tracker_collection = bpy.data.collections[tracker_collection_name]
-    print(f"Collection '{tracker_collection_name}' already exists.")
-else:
-    # Create a new collection
-    tracker_collection = bpy.data.collections.new(tracker_collection_name)
-    bpy.context.scene.collection.children.link(tracker_collection)
-    print(f"Collection '{tracker_collection_name}' created.")
+character_collection_name="CharacterCollection"
 
-for obj in tracker_collection.objects:
-    bpy.data.objects.remove(obj, do_unlink=True)
-#cleanup(SHITTY)
-print([c for c in bpy.data.collections])
+
+def get_collection(collection_name:str):
+    if collection_name in bpy.data.collections:
+        # Set new_collection to the existing collection
+        new_collection = bpy.data.collections[collection_name]
+        print(f"Collection '{collection_name}' already exists.")
+    else:
+        # Create a new collection
+        new_collection = bpy.data.collections.new(collection_name)
+        bpy.context.scene.collection.children.link(new_collection)
+        print(f"Collection '{collection_name}' created.")
+
+    return new_collection
+
+new_collection=get_collection(collection_name)
+tracker_collection=get_collection(tracker_collection_name)
+character_collection=get_collection(character_collection_name)
+
 
 testing=True
 # Set render engine to Cycles
@@ -237,6 +233,12 @@ else:
 for c in character_dict.keys():
     if c not in bpy.data.objects:
         bpy.ops.wm.obj_import(filepath=f"\\Users\\jlbak\\hands3to2\\characters\\{c}\\{c}.obj")
+    obj=bpy.data.objects[c]
+    for collection in obj.users_collection:
+        collection.objects.unlink(obj)
+
+    character_collection.objects.link(obj)
+
 for obj_name in [k for k in character_dict.keys()]:
     reset(obj_name,True)
 bpy.context.view_layer.update()
