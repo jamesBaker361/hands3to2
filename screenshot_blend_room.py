@@ -372,7 +372,7 @@ except:
 class BreakOutException(Exception):
     pass
 start=0
-with open(os.path.join(script_directory, "img_info.txt"),"w+") as write_file:
+with open(os.path.join(script_directory, "img_metadata.csv"),"w+") as write_file:
 
     write_file.write("path,character,x,y,x1,y1,angle")
     try:
@@ -505,7 +505,7 @@ with open(os.path.join(script_directory, "img_info.txt"),"w+") as write_file:
                                         #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
                                         print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
                                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                                        write_file.write(f"\n{bpy.context.scene.render.filepath},{x},{y},{x_1},{y_1},{rotation}")
+                                        write_file.write(f"\n{bpy.context.scene.render.filepath},{character},{x},{y},{x_1},{y_1},{rotation}")
                                         #raise BreakOutException
                                     reset(character,True)
                     
