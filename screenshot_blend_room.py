@@ -8,13 +8,13 @@ import bpy_extras
 import numpy as np
 import re
 import sys
-sys.path.append("\\Users\\jlbak\\hands3to2")
-sys.path.append("/Users/jbaker15/Desktop/hands3to2")
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from screenshot_data import *
 from generate_valid_camera_angles import reset,generate_camera_positions,SHITTY
 from math import degrees
 from config import *
 from static_globals import *
+
 
 import re
 import platform
