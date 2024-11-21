@@ -19,9 +19,26 @@ from static_globals import *
 import re
 import platform
 from PIL import Image, ImageDraw
-# Set camera parameters
-camera = bpy.context.scene.camera
-camera.data.lens = 25
+# Delete all cameras in the scene
+for obj in list(bpy.data.objects):  # Use a copy of the list to avoid modification during iteration
+    if obj.type == 'CAMERA':
+        bpy.data.objects.remove(obj, do_unlink=True)
+        print(f"Deleted camera: {obj.name}")
+
+# Create a new camera
+bpy.ops.object.camera_add(location=(0, 0, 10))  # Adjust location as needed
+camera = bpy.context.object  # The newly created camera becomes the active object
+
+# Rename the camera to "Camera"
+camera.name = "Camera"
+
+# Set the new camera as the scene's active camera
+bpy.context.scene.camera = camera
+
+# Modify the lens property (focal length)
+camera.data.lens = 25  # Set the focal length to 25mm
+
+print(f"Created new camera '{camera.name}' with lens set to {camera.data.lens}mm.")
 #light=bpy.data.objects["MainLight"]
 scene = bpy.context.scene
 
@@ -187,6 +204,52 @@ def cleanup(substring:str):
 # import each scene, based on the filename, add it to a collection with its name, then delete it
 # also import each character
 
+import bpy
+import mathutils
+
+def create_bounding_box(obj):
+    # Get the object's bounding box in world coordinates
+    world_corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+
+    # Calculate min and max points
+    min_corner = mathutils.Vector((float('inf'), float('inf'), float('inf')))
+    max_corner = mathutils.Vector((float('-inf'), float('-inf'), float('-inf')))
+
+    for corner in world_corners:
+        min_corner = mathutils.Vector((min(min_corner.x, corner.x), min(min_corner.y, corner.y), min(min_corner.z, corner.z)))
+        max_corner = mathutils.Vector((max(max_corner.x, corner.x), max(max_corner.y, corner.y), max(max_corner.z, corner.z)))
+
+    # Create a mesh representing the bounding box
+    verts = [
+        min_corner,  # 0: Min X, Min Y, Min Z
+        mathutils.Vector((max_corner.x, min_corner.y, min_corner.z)),  # 1: Max X, Min Y, Min Z
+        mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),  # 2: Max X, Max Y, Min Z
+        mathutils.Vector((min_corner.x, max_corner.y, min_corner.z)),  # 3: Min X, Max Y, Min Z
+        mathutils.Vector((min_corner.x, min_corner.y, max_corner.z)),  # 4: Min X, Min Y, Max Z
+        mathutils.Vector((max_corner.x, min_corner.y, max_corner.z)),  # 5: Max X, Min Y, Max Z
+        mathutils.Vector((max_corner.x, max_corner.y, max_corner.z)),  # 6: Max X, Max Y, Max Z
+        mathutils.Vector((min_corner.x, max_corner.y, max_corner.z))   # 7: Min X, Max Y, Max Z
+    ]
+    
+    # Create edges connecting the vertices
+    edges = [
+        (0, 1), (1, 2), (2, 3), (3, 0),  # Bottom face
+        (4, 5), (5, 6), (6, 7), (7, 4),  # Top face
+        (0, 4), (1, 5), (2, 6), (3, 7)   # Vertical edges
+    ]
+    
+    # Create a new mesh
+    mesh = bpy.data.meshes.new("BoundingBoxMesh")
+    obj_data = bpy.data.objects.new("BoundingBox", mesh)
+    bpy.context.collection.objects.link(obj_data)
+    
+    # Create mesh from vertices and edges
+    mesh.from_pydata(verts, edges, [])
+    mesh.update()
+
+    return obj_data
+
+
 
 collection_name="CameraCollection"
 tracker_collection_name="TrackerCollection"
@@ -244,7 +307,7 @@ if testing:
 
     # Set max light bounces to 2
     bpy.context.scene.cycles.max_bounces = 2
-    character_dict={"Raccoon_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
+    character_dict={"Jellyfish_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
 
 else:
     # Set resolution to 128x128
@@ -328,14 +391,23 @@ try:
                                 character_obj.rotation_euler=character_dict[character].rotation
                                 character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
                                 # Adjust the object's location based on its bottom point
-                                bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-
+                                
                                 # Offset the object's location so its bottom is at desired_location
-                                offset_z = character_obj.location.z - min_z
+                                
                                 #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
                                 #print(f"location {character_obj.location}")
-                                character_obj.location = (location[0], location[1],  location[2])
+
+                                bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                lowest=0
+                                lowest_corner=bbox_corners[0]
+                                for corner in bbox_corners:
+                                    if corner.z<lowest_corner.z:
+                                        corner=lowest_corner
+                                print(f"matrix world before {character_obj.matrix_world}")
+                                print(f"lowest corner before mpving {lowest_corner}")
+                                character_obj.location = (location[0], location[1],  location[2]-min_z)
+                                #character_obj.matrix_world.translation=Vector((location[0], location[1],  location[2]))
                                 #print(f"location {character_obj.location}")
                                 axis=character_dict[character].axis
 
@@ -343,10 +415,31 @@ try:
 
                                 relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
 
+                                #create_bounding_box(character_obj)
+
                                 print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
                                 print(f"relative rotation {relative_rotation}")
+                                '''bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                lowest=0
+                                lowest_corner=bbox_corners[0]
+                                for corner in bbox_corners:
+                                    if corner.z<lowest_corner.z:
+                                        corner=lowest_corner
+                                print(f"lowest corner {lowest_corner}")
+                                print(f"matrix wordl {character_obj.matrix_world}")
 
-                                
+                                bbox_corners = [mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                lowest=0
+                                lowest_corner=bbox_corners[0]
+                                for corner in bbox_corners:
+                                    if corner.z<lowest_corner.z:
+                                        corner=lowest_corner
+                                print(f"normal lowest corner {lowest_corner}")
+                                print(f"object location {character_obj.location}")
+                                print(f"location {location}")
+                                print(f"min z {min_z}")'''
 
                                 # Rotate the object around the axis to align with the camera
                                 character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
