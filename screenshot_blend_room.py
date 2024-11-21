@@ -8,6 +8,7 @@ import bpy_extras
 import numpy as np
 import re
 import sys
+sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from screenshot_data import *
 from generate_valid_camera_angles import reset,generate_camera_positions,SHITTY
