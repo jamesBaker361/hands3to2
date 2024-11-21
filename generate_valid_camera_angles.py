@@ -3,11 +3,12 @@ import math
 import mathutils
 from mathutils import Vector
 import re
+import platform
 import os
 import sys
 sys.path.append("\\Users\\jlbak\\hands3to2")
-folder="\\Users\\jlbak\\hands3to2\\camera_test\\"
-os.makedirs(folder,exist_ok=True)
+from static_globals import *
+
 camera = bpy.context.scene.camera
 
 SHITTY="shitty_camera"
@@ -168,7 +169,7 @@ if __name__=="__main__":
         rot_quat = direction.to_track_quat('-Z', 'Y')
         #camera.rotation_euler = rot_quat.to_euler()
         # Set render settings for the screenshot
-        bpy.context.scene.render.filepath = f"{folder}\\pic_{i}.png"
+        bpy.context.scene.render.filepath =  os.path.join(FOLDER, f"pic_{i}.png") #f"{FOLDER}\\pic_{i}.png"
         bpy.context.scene.render.image_settings.file_format = 'PNG'
         
 

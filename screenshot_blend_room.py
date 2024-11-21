@@ -14,7 +14,7 @@ from screenshot_data import *
 from generate_valid_camera_angles import reset,generate_camera_positions,SHITTY
 from math import degrees
 from config import *
-
+from static_globals import *
 
 import re
 import platform
@@ -25,21 +25,6 @@ camera.data.lens = 25
 #light=bpy.data.objects["MainLight"]
 scene = bpy.context.scene
 
-
-
-using_mac=True
-
-if platform.system() == "Darwin":
-    print("Running on macOS")
-    folder="/home/jlb638/hands3to2/blender_images"
-elif platform.system() == "Windows":
-    print("Running on Windows")
-    using_mac=False
-    folder="\\Users\\jlbak\\hands3to2\\blender_images\\"
-else:
-    print(f"Running on another OS {platform.system()}")
-
-os.makedirs(folder,exist_ok=True)
 
 
 def add_dots_to_image(image_path, coords1, coords2, radius=5):
@@ -135,6 +120,28 @@ def rescale_to_unit_box(obj,target_height=1.0):
     
     # Apply the scale transformation
     #bpy.ops.object.transform_apply(scale=True)
+
+def init_gpu():
+    # Set the render engine to Cycles
+    bpy.context.scene.render.engine = 'CYCLES'
+
+    # Enable GPU rendering
+    bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'  # Use 'CUDA', 'OPTIX', or 'HIP'
+    bpy.context.scene.cycles.device = 'GPU'
+
+    # Enable all available GPUs
+    for device in bpy.context.preferences.addons['cycles'].preferences.get_devices():
+        for gpu in device:
+            gpu.use = True
+
+    # Optional: Set tile size for optimal GPU rendering
+    bpy.context.scene.render.tile_x = 256
+    bpy.context.scene.render.tile_y = 256
+
+    # Optional: Enable denoising
+    bpy.context.scene.cycles.use_denoising = True
+
+    print("GPU rendering configured successfully!")
 
 
 
@@ -346,13 +353,15 @@ try:
                                 for rotation in range(0,360,character_angle_step):
                                     print("character location",character_obj.location)
                                     character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
-                                    os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
+                                    character_folder=os.path.join(FOLDER, scene_mesh_name, character)
+                                    os.makedirs(character_folder, exist_ok= True)
+                                    #os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
                                     start+=1
                                     location_count+=1
                                     if start>limit or location_count> limit_per_location:
                                         raise BreakOutException
-
-                                    bpy.context.scene.render.filepath = f"{folder}\\{scene_mesh_name}\\{character}\\{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
+                                    file_name=f"{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
+                                    bpy.context.scene.render.filepath = os.path.join(character_folder, file_name)
                                     bpy.context.scene.render.image_settings.file_format = 'PNG'
                                     
 
