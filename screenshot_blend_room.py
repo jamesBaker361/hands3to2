@@ -168,7 +168,7 @@ def init_gpu():
     bpy.context.scene.render.engine = 'CYCLES'
 
     # Enable GPU rendering
-    bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'  # Use 'CUDA', 'OPTIX', or 'HIP'
+    bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'METAL'  # Use 'CUDA', 'OPTIX', or 'HIP'
     bpy.context.scene.cycles.device = 'GPU'
 
     # Enable all available GPUs
@@ -362,6 +362,10 @@ for c in character_dict.keys():
 for obj_name in [k for k in character_dict.keys()]:
     reset(obj_name,True)
 bpy.context.view_layer.update()
+try:
+    init_gpu()
+except:
+    print("init gpu failed")
 class BreakOutException(Exception):
     pass
 start=0
