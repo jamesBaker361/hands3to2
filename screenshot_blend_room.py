@@ -39,6 +39,8 @@ from config import *
 from static_globals import *
 
 
+
+
 import re
 import platform
 try:
@@ -370,145 +372,150 @@ except:
 class BreakOutException(Exception):
     pass
 start=0
-try:
-    scene_mesh_name="room"
-    scene_params=scene_camera_params_dict[scene_mesh_name]
-    for s,location in enumerate(scene_params.object_location_list):
-        print(f" location to be set = {location}")
-        location_count=0
-        try:
+with open(os.path.join(script_directory, "img_info.txt"),"w+") as write_file:
 
-            for scale_step in range(scale_samples+1):
-                scale=scene_params.scale_range[0]+(scene_params.scale_range[1]-scene_params.scale_range[0])*(float(scale_step)/float(scale_samples))
-                for constraint in camera.constraints:
-                    camera.constraints.remove(constraint)
-                print(f"scale {scale}")
-                bpy.ops.object.empty_add(type='PLAIN_AXES', location=Vector((location[0], location[1], location[2]+scale/2)))
-                empty_target = bpy.context.object
-                empty_target.location=(location[0],location[1],location[2]+scale/2)
-                object_name="TrackingEmpty"
-                empty_target.name = object_name  # Name the Empty for easier identification
-                for collection in empty_target.users_collection:
-                    collection.objects.unlink(empty_target)
-                    
-                # Link the object to the new collection
-                tracker_collection.objects.link(empty_target)
+    write_file.write("path,character,x,y,x1,y1,angle")
+    try:
+        scene_mesh_name="room"
+        scene_params=scene_camera_params_dict[scene_mesh_name]
+        for s,location in enumerate(scene_params.object_location_list):
+            print(f" location to be set = {location}")
+            location_count=0
+            try:
 
-                constraint = camera.constraints.new(type='TRACK_TO')
-                constraint.target = empty_target
-                constraint.track_axis = 'TRACK_NEGATIVE_Z'  # Camera points down -Z by default
-                constraint.up_axis = 'UP_Y'  # Y-axis is usually the upward direction
-                for distance_step in range(distance_samples+1):
-                    distance=scene_params.distance_range[0]+(scene_params.distance_range[1]-scene_params.distance_range[0])*(float(distance_step)/float(distance_samples))
-                    print(f"\t distance {distance}")
-                    location_vector=Vector((location[0],location[1],location[2]))
-                    camera_position_list=generate_camera_positions(location_vector,distance,angle_step,scale,False,False,new_collection)
-                    for light_step in range(light_samples+1):
-                        light_energy=scene_params.light_range[0]+(scene_params.light_range[1]-scene_params.light_range[0])*(light_step/light_samples)
-                        #light.data.energy=light_energy
-                        print(f"\t\t light {light_energy}")
-                        for c,camera_pos in enumerate(camera_position_list):
-                            print(f"\t\t\tposition {camera_pos}")
-                            camera.location=camera_pos
-                            for character in character_dict:
-                                
-                                
-                                print(f"\t\t\t\t character{character}")
-                                reset(character,False)
-                                
-                                character_obj=bpy.data.objects[character]
-                                character_obj.location=(0,0,0)
-                                rescale_to_unit_box(character_obj,scale)
-                                character_obj.rotation_euler=character_dict[character].rotation
-                                character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
-                                # Adjust the object's location based on its bottom point
-                                
-                                # Offset the object's location so its bottom is at desired_location
-                                
-                                #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
-                                #print(f"location {character_obj.location}")
+                for scale_step in range(scale_samples+1):
+                    scale=scene_params.scale_range[0]+(scene_params.scale_range[1]-scene_params.scale_range[0])*(float(scale_step)/float(scale_samples))
+                    for constraint in camera.constraints:
+                        camera.constraints.remove(constraint)
+                    print(f"scale {scale}")
+                    bpy.ops.object.empty_add(type='PLAIN_AXES', location=Vector((location[0], location[1], location[2]+scale/2)))
+                    empty_target = bpy.context.object
+                    empty_target.location=(location[0],location[1],location[2]+scale/2)
+                    object_name="TrackingEmpty"
+                    empty_target.name = object_name  # Name the Empty for easier identification
+                    for collection in empty_target.users_collection:
+                        collection.objects.unlink(empty_target)
+                        
+                    # Link the object to the new collection
+                    tracker_collection.objects.link(empty_target)
 
-                                bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-                                lowest=0
-                                lowest_corner=bbox_corners[0]
-                                for corner in bbox_corners:
-                                    if corner.z<lowest_corner.z:
-                                        corner=lowest_corner
-                                print(f"matrix world before {character_obj.matrix_world}")
-                                print(f"lowest corner before mpving {lowest_corner}")
-                                character_obj.location = (location[0], location[1],  location[2]-min_z)
-                                #character_obj.matrix_world.translation=Vector((location[0], location[1],  location[2]))
-                                #print(f"location {character_obj.location}")
-                                axis=character_dict[character].axis
-
-                                camera_object_distance=camera.location-character_obj.location
-
-                                relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
-
-                                #create_bounding_box(character_obj)
-
-                                print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
-                                print(f"relative rotation {relative_rotation}")
-                                '''bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-                                lowest=0
-                                lowest_corner=bbox_corners[0]
-                                for corner in bbox_corners:
-                                    if corner.z<lowest_corner.z:
-                                        corner=lowest_corner
-                                print(f"lowest corner {lowest_corner}")
-                                print(f"matrix wordl {character_obj.matrix_world}")
-
-                                bbox_corners = [mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-                                lowest=0
-                                lowest_corner=bbox_corners[0]
-                                for corner in bbox_corners:
-                                    if corner.z<lowest_corner.z:
-                                        corner=lowest_corner
-                                print(f"normal lowest corner {lowest_corner}")
-                                print(f"object location {character_obj.location}")
-                                print(f"location {location}")
-                                print(f"min z {min_z}")'''
-
-                                # Rotate the object around the axis to align with the camera
-                                character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
-                                for rotation in range(0,360,character_angle_step):
-                                    print("character location",character_obj.location)
-                                    character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
-                                    character_folder=os.path.join(FOLDER, scene_mesh_name, character)
-                                    os.makedirs(character_folder, exist_ok= True)
-                                    #os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
-                                    start+=1
-                                    location_count+=1
-                                    if start>limit or location_count> limit_per_location:
-                                        raise BreakOutException
-                                    file_name=f"{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
-                                    bpy.context.scene.render.filepath = os.path.join(character_folder, file_name)
-                                    bpy.context.scene.render.image_settings.file_format = 'PNG'
+                    constraint = camera.constraints.new(type='TRACK_TO')
+                    constraint.target = empty_target
+                    constraint.track_axis = 'TRACK_NEGATIVE_Z'  # Camera points down -Z by default
+                    constraint.up_axis = 'UP_Y'  # Y-axis is usually the upward direction
+                    for distance_step in range(distance_samples+1):
+                        distance=scene_params.distance_range[0]+(scene_params.distance_range[1]-scene_params.distance_range[0])*(float(distance_step)/float(distance_samples))
+                        print(f"\t distance {distance}")
+                        location_vector=Vector((location[0],location[1],location[2]))
+                        camera_position_list=generate_camera_positions(location_vector,distance,angle_step,scale,False,False,new_collection)
+                        for light_step in range(light_samples+1):
+                            light_energy=scene_params.light_range[0]+(scene_params.light_range[1]-scene_params.light_range[0])*(light_step/light_samples)
+                            #light.data.energy=light_energy
+                            print(f"\t\t light {light_energy}")
+                            for c,camera_pos in enumerate(camera_position_list):
+                                print(f"\t\t\tposition {camera_pos}")
+                                camera.location=camera_pos
+                                for character in character_dict:
                                     
+                                    
+                                    print(f"\t\t\t\t character{character}")
+                                    reset(character,False)
+                                    
+                                    character_obj=bpy.data.objects[character]
+                                    character_obj.location=(0,0,0)
+                                    rescale_to_unit_box(character_obj,scale)
+                                    character_obj.rotation_euler=character_dict[character].rotation
+                                    character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
+                                    # Adjust the object's location based on its bottom point
+                                    
+                                    # Offset the object's location so its bottom is at desired_location
+                                    
+                                    #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
+                                    #print(f"location {character_obj.location}")
 
-                                    # Render and save the screenshot from the camera's perspective
-                                    bpy.ops.render.render(write_still=True)
-                                    #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
+                                    bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                    min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                    lowest=0
+                                    lowest_corner=bbox_corners[0]
+                                    for corner in bbox_corners:
+                                        if corner.z<lowest_corner.z:
+                                            corner=lowest_corner
+                                    print(f"matrix world before {character_obj.matrix_world}")
+                                    print(f"lowest corner before mpving {lowest_corner}")
+                                    character_obj.location = (location[0], location[1],  location[2]-min_z)
+                                    #character_obj.matrix_world.translation=Vector((location[0], location[1],  location[2]))
+                                    #print(f"location {character_obj.location}")
+                                    axis=character_dict[character].axis
 
-                                    bpy.context.view_layer.update()
-                                    x,y=world_to_screen(location)
-                                    x_1,y_1=world_to_screen((location[0], location[1], location[2] + scale))
-                                    #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
-                                    print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
-                                    print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                                    #raise BreakOutException
-                                reset(character,True)
-                
-                #cleanup(object_name)
-                
-        except BreakOutException:
-            if start>=limit:
-                raise BreakOutException        
-    reset(scene_mesh_name,True)
-except BreakOutException:
+                                    camera_object_distance=camera.location-character_obj.location
+
+                                    relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
+
+                                    #create_bounding_box(character_obj)
+
+                                    print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
+                                    print(f"relative rotation {relative_rotation}")
+                                    '''bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                    min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                    lowest=0
+                                    lowest_corner=bbox_corners[0]
+                                    for corner in bbox_corners:
+                                        if corner.z<lowest_corner.z:
+                                            corner=lowest_corner
+                                    print(f"lowest corner {lowest_corner}")
+                                    print(f"matrix wordl {character_obj.matrix_world}")
+
+                                    bbox_corners = [mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                    min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                    lowest=0
+                                    lowest_corner=bbox_corners[0]
+                                    for corner in bbox_corners:
+                                        if corner.z<lowest_corner.z:
+                                            corner=lowest_corner
+                                    print(f"normal lowest corner {lowest_corner}")
+                                    print(f"object location {character_obj.location}")
+                                    print(f"location {location}")
+                                    print(f"min z {min_z}")'''
+
+                                    # Rotate the object around the axis to align with the camera
+                                    character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
+                                    for rotation in range(0,360,character_angle_step):
+                                        print("character location",character_obj.location)
+                                        character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
+                                        character_folder=os.path.join(FOLDER, scene_mesh_name, character)
+                                        os.makedirs(character_folder, exist_ok= True)
+                                        #os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
+                                        start+=1
+                                        location_count+=1
+                                        if start>limit or location_count> limit_per_location:
+                                            raise BreakOutException
+                                        file_name=f"{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
+                                        bpy.context.scene.render.filepath = os.path.join(character_folder, file_name)
+                                        
+                                        bpy.context.scene.render.image_settings.file_format = 'PNG'
+                                        
+
+                                        # Render and save the screenshot from the camera's perspective
+                                        bpy.ops.render.render(write_still=True)
+                                        #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
+
+                                        bpy.context.view_layer.update()
+                                        x,y=world_to_screen(location)
+                                        x_1,y_1=world_to_screen((location[0], location[1], location[2] + scale))
+                                        #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
+                                        print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
+                                        print("Screenshot saved to:", bpy.context.scene.render.filepath)
+                                        write_file.write(f"\n{bpy.context.scene.render.filepath},{x},{y},{x_1},{y_1},{rotation}")
+                                        #raise BreakOutException
+                                    reset(character,True)
+                    
+                    #cleanup(object_name)
+                    
+            except BreakOutException:
+                if start>=limit:
+                    raise BreakOutException        
+        reset(scene_mesh_name,True)
+    except BreakOutException:
+        reset(scene_mesh_name,False)
+
     reset(scene_mesh_name,False)
-
-reset(scene_mesh_name,False)
