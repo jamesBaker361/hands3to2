@@ -351,7 +351,8 @@ else:
 
 for c in character_dict.keys():
     if c not in bpy.data.objects:
-        bpy.ops.wm.obj_import(filepath=f"\\Users\\jlbak\\hands3to2\\characters\\{c}\\{c}.obj")
+        filepath=os.path.join(script_directory, "characters",c, f"{c}.obj")
+        bpy.ops.wm.obj_import(filepath=filepath)
     obj=bpy.data.objects[c]
     for collection in obj.users_collection:
         collection.objects.unlink(obj)
