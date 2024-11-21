@@ -5,7 +5,28 @@ import os
 import mathutils
 from mathutils import Vector
 import bpy_extras
-import numpy as np
+import sys 
+import subprocess
+def install_package(package_name):
+    """Install a Python package using Blender's bundled Python."""
+    python_executable = sys.executable  # Blender's Python interpreter
+    try:
+        # Ensure pip is installed
+        subprocess.check_call([python_executable, "-m", "ensurepip", "--upgrade"])
+        # Upgrade pip
+        subprocess.check_call([python_executable, "-m", "pip", "install", "--upgrade", "pip"])
+        # Install the required package
+        subprocess.check_call([python_executable, "-m", "pip", "install", package_name])
+        print(f"Package '{package_name}' installed successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install package '{package_name}': {e}")
+
+
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    install_package("numpy")
 import re
 import sys
 sys.path.append(os.getcwd())
@@ -19,7 +40,10 @@ from static_globals import *
 
 import re
 import platform
-from PIL import Image, ImageDraw
+try:
+    from PIL import Image, ImageDraw
+except ModuleNotFoundError:
+    install_package("pillow")
 # Delete all cameras in the scene
 for obj in list(bpy.data.objects):  # Use a copy of the list to avoid modification during iteration
     if obj.type == 'CAMERA':
