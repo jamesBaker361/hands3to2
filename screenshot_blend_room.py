@@ -376,7 +376,10 @@ except:
 class BreakOutException(Exception):
     pass
 start=0
-with open(os.path.join(script_directory, "img_metadata.csv"),"w+") as write_file:
+metadata_dir=os.path.join(script_directory, "metadata")
+os.makedirs(metadata_dir,exist_ok=True)
+uid= str(random.randint(10000, 99999))
+with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_file:
 
     write_file.write("path,character,x,y,x1,y1,angle")
     try:
