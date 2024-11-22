@@ -1,4 +1,4 @@
-import datasets import Da
+from datasets import Dataset
 from PIL import Image
 import csv
 # Open the CSV file
@@ -12,6 +12,8 @@ map={
     "y_1":[],
     "angle":[]
 }
+
+repo_id="jlbaker361/blender_animals"
 
 with open('img_metadata.csv', mode='r') as file:
     csv_reader = csv.reader(file)
@@ -35,3 +37,6 @@ with open('img_metadata.csv', mode='r') as file:
         map["x_1"].append(x_1)
         map["y_1"].append(y_1)
         map["angle"].append(angle)
+
+        if j%100==0:
+            Dataset.from_dict(map).push_to_hub(repo_id)
