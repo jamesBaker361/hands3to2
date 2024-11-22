@@ -368,12 +368,20 @@ if testing:
     }
 
 else:
+    scale_samples=16
+    light_samples=2
+    angle_step=15
+    distance_samples=16
+    character_angle_step=30
+    limit=10000000
+    limit_per_location=10000
+    random_angles=6
     # Set resolution to 128x128
     bpy.context.scene.render.resolution_x = 512
     bpy.context.scene.render.resolution_y = 512
     
     # Optional: Lower samples for faster rendering
-    bpy.context.scene.cycles.samples = 100  # Adjust as needed
+    bpy.context.scene.cycles.samples = 80  # Adjust as needed
     
 
     # Set max light bounces to 2
