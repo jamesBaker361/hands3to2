@@ -6,6 +6,7 @@ import mathutils
 from mathutils import Vector
 import bpy_extras
 import sys 
+import random
 import subprocess
 def install_package(package_name):
     """Install a Python package using Blender's bundled Python."""
@@ -384,7 +385,8 @@ with open(os.path.join(script_directory, "img_metadata.csv"),"w+") as write_file
             try:
 
                 for scale_step in range(scale_samples+1):
-                    scale=scene_params.scale_range[0]+(scene_params.scale_range[1]-scene_params.scale_range[0])*(float(scale_step)/float(scale_samples))
+                    #scale=scene_params.scale_range[0]+(scene_params.scale_range[1]-scene_params.scale_range[0])*(float(scale_step)/float(scale_samples))
+                    scale=round(random.uniform(scene_params.scale_range[0],scene_params.scale_range[1]),2)
                     for constraint in camera.constraints:
                         camera.constraints.remove(constraint)
                     print(f"scale {scale}")
@@ -404,7 +406,8 @@ with open(os.path.join(script_directory, "img_metadata.csv"),"w+") as write_file
                     constraint.track_axis = 'TRACK_NEGATIVE_Z'  # Camera points down -Z by default
                     constraint.up_axis = 'UP_Y'  # Y-axis is usually the upward direction
                     for distance_step in range(distance_samples+1):
-                        distance=scene_params.distance_range[0]+(scene_params.distance_range[1]-scene_params.distance_range[0])*(float(distance_step)/float(distance_samples))
+                        #distance=scene_params.distance_range[0]+(scene_params.distance_range[1]-scene_params.distance_range[0])*(float(distance_step)/float(distance_samples))
+                        distance=round(random.uniform(scene_params.distance_range[0],scene_params.distance_range[1]),2)
                         print(f"\t distance {distance}")
                         location_vector=Vector((location[0],location[1],location[2]))
                         camera_position_list=generate_camera_positions(location_vector,distance,angle_step,scale,False,False,new_collection)
