@@ -531,7 +531,7 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
                                     character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
                                     for rotation in [r for r in range(0,360,character_angle_step)]+[random.randint(0,360) for _ in range(random_angles)]:
                                         print("character location",character_obj.location)
-                                        character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
+                                        character_obj.rotation_euler.rotate_axis(axis,math.radians(rotation))
                                         character_folder=os.path.join(FOLDER, scene_mesh_name, character)
                                         os.makedirs(character_folder, exist_ok= True)
                                         #os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
@@ -556,6 +556,7 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
                                         print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
                                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
                                         write_file.write(f"\n{bpy.context.scene.render.filepath},{character},{x},{y},{x_1},{y_1},{rotation}")
+                                        character_obj.rotation_euler.rotate_axis(axis,-math.radians(rotation))
                                         #raise BreakOutException
                                     
                                     reset(character,True)
