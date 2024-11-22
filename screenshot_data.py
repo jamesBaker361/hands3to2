@@ -1,5 +1,6 @@
 import math
 from math import pi
+from static_globals import *
 class SceneParameters:
     def __init__(self,object_location_list:list, scale_range:list,light_range:list,distance_range:list):
         self.object_location_list=object_location_list
@@ -12,7 +13,10 @@ class CharacterParameters:
         self.rotation=rotation
         self.axis=axis
 
-character_dict={"Raccoon_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
+directory=os.path.join(script_directory, "characters")
+characters=[d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+print(characters)
+character_dict={c:CharacterParameters([math.pi/2,0,0],"Y") for c in characters}
 scene_camera_params_dict={
     "bedroom":SceneParameters([[0.4,1.5,0.72]],[0.2,1.5],[5,10],[0.5,4]),
     "office":SceneParameters([[3,3,0.75],
