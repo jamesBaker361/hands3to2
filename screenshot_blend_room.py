@@ -352,8 +352,8 @@ if testing:
                            # [0.5,2.2,0.41],
                            # [-1,-0.25,0.21],
                            # [-2.75,0.25,0.57],
-                           # [-3.5,0.25,0.65],
-                           # [-3.9,-1.3,0.65],
+                            [-3.5,0.25,0.65],
+                            [-3.9,-1.3,0.65],
                            # [-3,-1.3,0.65],
                            # [-1.4,-2.1,0.415],
                             [-1.3,-2.1,0.045],
@@ -361,10 +361,10 @@ if testing:
                            # [-5.2,-1.2,0.65],
                            # [-5.1,0.1,0.65],
                            # [1,-0.8,0.2],
-                           # [1.2,-2.05,0.37],
+                            [1.2,-2.05,0.37],
                            # [0.5,-2.28,1.61],
                            # [0,2,0.55]
-                            ],[0.5,5.0],[5,10],[0.1,10.0])                         
+                            ],[0.5,1.0],[.05,1],[0.5,2.0])                         
     }
 
 else:
@@ -410,7 +410,9 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
     try:
         scene_mesh_name="room"
         scene_params=scene_camera_params_dict[scene_mesh_name]
-        for s,location in enumerate(scene_params.object_location_list):
+        location_list=scene_params.object_location_list
+        random.shuffle(location_list)
+        for s,location in enumerate(location_list):
             print(f" location to be set = {location}")
             location_count=0
             try:
@@ -519,7 +521,7 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
 
                                     # Rotate the object around the axis to align with the camera
                                     character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
-                                    for rotation in range(0,360,character_angle_step):
+                                    for rotation in [r for r in range(0,360,character_angle_step)]+[random.randint(0,360) for _ in range(random_angles)]:
                                         print("character location",character_obj.location)
                                         character_obj.rotation_euler.rotate_axis(axis,math.radians(character_angle_step))
                                         character_folder=os.path.join(FOLDER, scene_mesh_name, character)
@@ -547,6 +549,7 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
                                         print("Screenshot saved to:", bpy.context.scene.render.filepath)
                                         write_file.write(f"\n{bpy.context.scene.render.filepath},{character},{x},{y},{x_1},{y_1},{rotation}")
                                         #raise BreakOutException
+                                    
                                     reset(character,True)
                     
                     #cleanup(object_name)
