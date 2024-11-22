@@ -539,7 +539,7 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
                                         location_count+=1
                                         if start>limit or location_count> limit_per_location:
                                             raise BreakOutException
-                                        file_name=f"{distance}_{s}_{c}_{light_energy}_{rotation}_{scale}.png"
+                                        file_name=f"{distance}_{rotation}_{scale}.png"
                                         bpy.context.scene.render.filepath = os.path.join(character_folder, file_name)
                                         
                                         bpy.context.scene.render.image_settings.file_format = 'PNG'
