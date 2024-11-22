@@ -453,7 +453,9 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
                                 #for constraint in camera.constraints:
                                 #    camera.constraints.remove(constraint)
                                 camera.rotation_euler=before_rotation
-                                for character in character_dict:
+                                character_keys=[k for k in character_dict.keys()]
+                                random.shuffle(character_keys)
+                                for character in character_keys:
                                     
                                     
                                     print(f"\t\t\t\t character{character}")
