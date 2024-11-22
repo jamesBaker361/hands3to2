@@ -340,6 +340,32 @@ if testing:
     # Set max light bounces to 2
     bpy.context.scene.cycles.max_bounces = 2
     character_dict={"Jellyfish_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Duck_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
+    scene_camera_params_dict={
+    "bedroom":SceneParameters([[0.4,1.5,0.72]],[0.2,1.5],[5,10],[0.5,4]),
+    "office":SceneParameters([[3,3,0.75],
+                              [5,3,0.75],
+                              [0.3,3,0.75],
+                              [2,3.5,0.01],
+                              [7,4,0.01]],[0.2,1.0],[5,10],[0.5,3]),
+    "room":SceneParameters([
+        #[-0.5,-1,0.11],
+                           # [0.5,2.2,0.41],
+                           # [-1,-0.25,0.21],
+                           # [-2.75,0.25,0.57],
+                           # [-3.5,0.25,0.65],
+                           # [-3.9,-1.3,0.65],
+                           # [-3,-1.3,0.65],
+                           # [-1.4,-2.1,0.415],
+                            [-1.3,-2.1,0.045],
+                           # [-1,-2.2,0.045],
+                           # [-5.2,-1.2,0.65],
+                           # [-5.1,0.1,0.65],
+                           # [1,-0.8,0.2],
+                           # [1.2,-2.05,0.37],
+                           # [0.5,-2.28,1.61],
+                           # [0,2,0.55]
+                            ],[0.5,5.0],[5,10],[0.1,10.0])                         
+    }
 
 else:
     # Set resolution to 128x128
@@ -423,6 +449,10 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
                             for c,camera_pos in enumerate(camera_position_list):
                                 print(f"\t\t\tposition {camera_pos}")
                                 camera.location=camera_pos
+                                before_rotation=camera.rotation_euler
+                                #for constraint in camera.constraints:
+                                #    camera.constraints.remove(constraint)
+                                camera.rotation_euler=before_rotation
                                 for character in character_dict:
                                     
                                     
@@ -522,6 +552,7 @@ with open(os.path.join(metadata_dir, f"img_metadata_{uid}.csv"),"w+") as write_f
             except BreakOutException:
                 if start>=limit:
                     raise BreakOutException        
+        #clean_collection(tracker_collection_name)
         reset(scene_mesh_name,True)
     except BreakOutException:
         reset(scene_mesh_name,False)
