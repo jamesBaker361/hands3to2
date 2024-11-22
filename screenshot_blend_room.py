@@ -51,8 +51,11 @@ except ModuleNotFoundError:
 # Delete all cameras in the scene
 for obj in list(bpy.data.objects):  # Use a copy of the list to avoid modification during iteration
     if obj.type == 'CAMERA':
-        bpy.data.objects.remove(obj, do_unlink=True)
-        print(f"Deleted camera: {obj.name}")
+        try:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            print(f"Deleted camera: {obj.name}")
+        except ReferenceError:
+            print("already removed")
 
 # Create a new camera
 bpy.ops.object.camera_add(location=(0, 0, 10))  # Adjust location as needed
