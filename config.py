@@ -1,5 +1,5 @@
 scale_samples=2
-light_samples=2
+light_samples=1
 angle_step=15
 distance_samples=2
 character_angle_step=120
