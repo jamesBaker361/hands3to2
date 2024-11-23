@@ -245,7 +245,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
     clean_collection(character_collection_name)
 
 
-    testing=False
+    testing=True
     # Set render engine to Cycles
     bpy.context.scene.render.engine = 'CYCLES'
     bpy.context.scene.render.resolution_percentage = 100
@@ -262,7 +262,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
         # Set max light bounces to 2
         bpy.context.scene.cycles.max_bounces = 2
-        character_dict={"Jellyfish_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Duck_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
+        character_dict={"Koala_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Duck_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
         scene_camera_params_dict={
         "bedroom":SceneParameters([[0.4,1.5,0.72]],[0.2,1.5],[5,10],[0.5,4]),
         "office":SceneParameters([[3,3,0.75],
@@ -287,7 +287,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                 [1.2,-2.05,0.37],
                             # [0.5,-2.28,1.61],
                             # [0,2,0.55]
-                                ],[0.5,1.0],[.05,1],[0.5,2.0])                         
+                                ],[0.95,1.1],[.05,1],[0.5,2.0])                         
         }
 
     else:
@@ -296,8 +296,8 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
         angle_step=15
         distance_samples=4
         character_angle_step=120
-        limit=10000000
-        limit_per_location=32
+        limit=10000
+        limit_per_location=16
         random_angles=4
         # Set resolution to 128x128
         bpy.context.scene.render.resolution_x = 512
