@@ -81,35 +81,6 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
 
 
-    def add_dots_to_image(image_path, coords1, coords2, radius=5):
-        """
-        Opens an image, adds two dots at specified coordinates, and saves the modified image.
-        
-        Parameters:
-        - image_path: Path to the input image.
-        - coords1, coords2: Tuples (x, y) representing the coordinates where dots will be drawn.
-        - radius: The radius of the dots to be drawn. Default is 5.
-        - output_path: Path where the modified image will be saved.
-        """
-        # Open the image
-        image = Image.open(image_path)
-
-        width, height = image.size
-        # Create a drawing context
-        draw = ImageDraw.Draw(image)
-        coords1=[width*coords1[0], height*coords1[1]]
-        coords2=[width*coords2[0], height*coords2[1]]
-
-        # Draw the first dot (coords1)
-        draw.ellipse([coords1[0] - radius, coords1[1] - radius, coords1[0] + radius, coords1[1] + radius], fill="red")
-
-        # Draw the second dot (coords2)
-        draw.ellipse([coords2[0] - radius, coords2[1] - radius, coords2[0] + radius, coords2[1] + radius], fill="blue")
-
-        # Save the modified image
-        image.save(image_path)
-
-
 
     def world_to_screen(world_coords):
         """
@@ -215,18 +186,6 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
         else:
             return 0  # Handle the origin if necessary
 
-    new_camera_params = {
-            # "location": (5.0, -5.0, 5.0),   # Change to your desired location
-            # "rotation_euler": (1.0, 0.0, 0.78),  # Change to your desired rotation in radians
-                "focal_length": 35.0,   # Adjust focal length as desired
-                "sensor_width": 24.0,   # Typical sensor width in mm
-                "sensor_height":24.0,
-                "clip_start": 0.01,
-                "clip_end": 1000.0,
-                "angle_x":0.90,
-                "angle_y":0
-    }
-
     def cleanup(substring:str):
         for obj in bpy.data.objects:
             if substring in obj.name:
@@ -244,47 +203,6 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
     import bpy
     import mathutils
 
-    def create_bounding_box(obj):
-        # Get the object's bounding box in world coordinates
-        world_corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
-
-        # Calculate min and max points
-        min_corner = mathutils.Vector((float('inf'), float('inf'), float('inf')))
-        max_corner = mathutils.Vector((float('-inf'), float('-inf'), float('-inf')))
-
-        for corner in world_corners:
-            min_corner = mathutils.Vector((min(min_corner.x, corner.x), min(min_corner.y, corner.y), min(min_corner.z, corner.z)))
-            max_corner = mathutils.Vector((max(max_corner.x, corner.x), max(max_corner.y, corner.y), max(max_corner.z, corner.z)))
-
-        # Create a mesh representing the bounding box
-        verts = [
-            min_corner,  # 0: Min X, Min Y, Min Z
-            mathutils.Vector((max_corner.x, min_corner.y, min_corner.z)),  # 1: Max X, Min Y, Min Z
-            mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),  # 2: Max X, Max Y, Min Z
-            mathutils.Vector((min_corner.x, max_corner.y, min_corner.z)),  # 3: Min X, Max Y, Min Z
-            mathutils.Vector((min_corner.x, min_corner.y, max_corner.z)),  # 4: Min X, Min Y, Max Z
-            mathutils.Vector((max_corner.x, min_corner.y, max_corner.z)),  # 5: Max X, Min Y, Max Z
-            mathutils.Vector((max_corner.x, max_corner.y, max_corner.z)),  # 6: Max X, Max Y, Max Z
-            mathutils.Vector((min_corner.x, max_corner.y, max_corner.z))   # 7: Min X, Max Y, Max Z
-        ]
-        
-        # Create edges connecting the vertices
-        edges = [
-            (0, 1), (1, 2), (2, 3), (3, 0),  # Bottom face
-            (4, 5), (5, 6), (6, 7), (7, 4),  # Top face
-            (0, 4), (1, 5), (2, 6), (3, 7)   # Vertical edges
-        ]
-        
-        # Create a new mesh
-        mesh = bpy.data.meshes.new("BoundingBoxMesh")
-        obj_data = bpy.data.objects.new("BoundingBox", mesh)
-        bpy.context.collection.objects.link(obj_data)
-        
-        # Create mesh from vertices and edges
-        mesh.from_pydata(verts, edges, [])
-        mesh.update()
-
-        return obj_data
 
 
 
@@ -510,27 +428,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
                                         print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
                                         print(f"relative rotation {relative_rotation}")
-                                        '''bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                        min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-                                        lowest=0
-                                        lowest_corner=bbox_corners[0]
-                                        for corner in bbox_corners:
-                                            if corner.z<lowest_corner.z:
-                                                corner=lowest_corner
-                                        print(f"lowest corner {lowest_corner}")
-                                        print(f"matrix wordl {character_obj.matrix_world}")
 
-                                        bbox_corners = [mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                        min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-                                        lowest=0
-                                        lowest_corner=bbox_corners[0]
-                                        for corner in bbox_corners:
-                                            if corner.z<lowest_corner.z:
-                                                corner=lowest_corner
-                                        print(f"normal lowest corner {lowest_corner}")
-                                        print(f"object location {character_obj.location}")
-                                        print(f"location {location}")
-                                        print(f"min z {min_z}")'''
 
                                         # Rotate the object around the axis to align with the camera
                                         character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
