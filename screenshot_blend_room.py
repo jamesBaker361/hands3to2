@@ -32,6 +32,7 @@ import re
 import sys
 sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append("\\Users\\jlbak\\hands3to2")
 sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 from screenshot_data import *
 from generate_valid_camera_angles import reset,generate_camera_positions,SHITTY
