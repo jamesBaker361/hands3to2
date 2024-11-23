@@ -262,7 +262,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
         # Set max light bounces to 2
         bpy.context.scene.cycles.max_bounces = 2
-        character_dict={"Koala_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Duck_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
+        character_dict={"Owl_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Owl_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
         scene_camera_params_dict={
         "bedroom":SceneParameters([[0.4,1.5,0.72]],[0.2,1.5],[5,10],[0.5,4]),
         "office":SceneParameters([[3,3,0.75],
@@ -460,10 +460,11 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                             #raise BreakOutException
                                         
                                         reset(character,True)
-
-                        
-                        #cleanup(object_name)
-                        
+                                        bpy.context.view_layer.objects.active = character_obj
+                                        # Select the object
+                                        obj.select_set(True)
+                                        # Delete the object
+                                        bpy.ops.object.delete()
                 except BreakOutException:
                     if start>=limit:
                         raise BreakOutException        
