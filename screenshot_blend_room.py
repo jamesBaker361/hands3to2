@@ -323,7 +323,7 @@ clean_collection(tracker_collection_name)
 clean_collection(character_collection_name)
 
 
-testing=True
+testing=False
 # Set render engine to Cycles
 bpy.context.scene.render.engine = 'CYCLES'
 bpy.context.scene.render.resolution_percentage = 100
@@ -369,14 +369,14 @@ if testing:
     }
 
 else:
-    scale_samples=16
-    light_samples=2
+    scale_samples=4
+    light_samples=1
     angle_step=15
-    distance_samples=16
-    character_angle_step=30
+    distance_samples=4
+    character_angle_step=120
     limit=10000000
-    limit_per_location=10000
-    random_angles=6
+    limit_per_location=32
+    random_angles=4
     # Set resolution to 128x128
     bpy.context.scene.render.resolution_x = 512
     bpy.context.scene.render.resolution_y = 512
