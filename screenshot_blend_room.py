@@ -313,15 +313,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
 
 
-    for c in character_dict.keys():
-        if c not in bpy.data.objects:
-            filepath=os.path.join(script_directory, "characters",c, f"{c}.obj")
-            bpy.ops.wm.obj_import(filepath=filepath)
-        obj=bpy.data.objects[c]
-        for collection in obj.users_collection:
-            collection.objects.unlink(obj)
-
-        character_collection.objects.link(obj)
+    
 
     for obj_name in [k for k in character_dict.keys()]:
         reset(obj_name,True)
@@ -389,12 +381,17 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                     character_keys=[k for k in character_dict.keys()]
                                     random.shuffle(character_keys)
                                     for character in character_keys:
-                                        
-                                        
                                         print(f"\t\t\t\t character{character}")
                                         reset(character,False)
                                         
+                                        if character not in bpy.data.objects:
+                                            filepath=os.path.join(script_directory, "characters",character, f"{character}.obj")
+                                            bpy.ops.wm.obj_import(filepath=filepath)
                                         character_obj=bpy.data.objects[character]
+                                        for collection in character_obj.users_collection:
+                                            collection.objects.unlink(character_obj)
+
+                                        character_collection.objects.link(character_obj)
                                         character_obj.location=(0,0,0)
                                         rescale_to_unit_box(character_obj,scale)
                                         character_obj.rotation_euler=character_dict[character].rotation
@@ -463,6 +460,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                             #raise BreakOutException
                                         
                                         reset(character,True)
+
                         
                         #cleanup(object_name)
                         
