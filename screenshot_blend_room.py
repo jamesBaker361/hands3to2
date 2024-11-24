@@ -247,7 +247,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
     clean_collection(character_collection_name)
 
 
-    testing=True
+    testing=False
     # Set render engine to Cycles
     bpy.context.scene.render.engine = 'CYCLES'
     bpy.context.scene.render.resolution_percentage = 100
@@ -464,7 +464,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                         reset(character,True)
                                         bpy.context.view_layer.objects.active = character_obj
                                         # Select the object
-                                        obj.select_set(True)
+                                        character_obj.select_set(True)
                                         # Delete the object
                                         bpy.ops.object.delete()
                 except BreakOutException:
