@@ -133,6 +133,8 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
         y_dist=max(v[1] for v in bbox_corners)-min(v[1] for v in bbox_corners)
         
         max_dimension = max(v[2] for v in bbox_corners)-min(v[2] for v in bbox_corners)
+        print("bbox corners:", bbox_corners)
+        print("obj location",obj.location)
         print(f"max x {x_dist} y {y_dist} z {max_dimension}")
         # Calculate scale factor to fit in a 1x1x1 box
         #max_dimension = max(bbox_size)  # Find the largest dimension
