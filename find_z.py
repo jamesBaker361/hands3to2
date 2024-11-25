@@ -20,9 +20,14 @@ def get_tallest_z_under_3(x, y):
             bbox = [obj.matrix_world @ bpy.mathutils.Vector(corner) for corner in obj.bound_box]
             
             # Check if any corner of the bounding box overlaps the (x, y) coordinate
-            for corner in bbox:
-                if corner.x == x and corner.y == y and corner.z < 3:
-                    max_z = max(max_z, corner.z)
+            x_max=[max(corner.x) for corner in bbox]
+            y_max=[max(corner.y) for corner in bbox]
+            x_min=[min(corner.x) for corner in bbox]
+            y_min=[min(corner.y) for corner in bbox]
+            _max_z=[max(corner.z) for corner in bbox]
+            if x>= x_min and x <= x_max:
+                if y >= y_min and y <= y_max:
+                    max_z = max(max_z, _max_z)
     return max_z if max_z != float('-inf') else None  # Return None if no valid Z is found
 
 # Loop through each (x, y) pair and find the tallest Z under 3
