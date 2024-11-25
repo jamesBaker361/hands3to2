@@ -138,7 +138,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
         print(f"max x {x_dist} y {y_dist} z {max_dimension}")
         # Calculate scale factor to fit in a 1x1x1 box
         #max_dimension = max(bbox_size)  # Find the largest dimension
-        scale_factor = target_height / max_dimension
+        scale_factor = obj.scale[2]* target_height / max_dimension
         
         # Apply scale factor
         obj.scale = (scale_factor, scale_factor, scale_factor)
@@ -299,7 +299,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
         distance_samples=4
         character_angle_step=120
         limit=10000
-        limit_per_location=16
+        limit_per_location=128
         random_angles=4
         # Set resolution to 128x128
         bpy.context.scene.render.resolution_x = 512
