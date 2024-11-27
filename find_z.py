@@ -8,6 +8,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append("\\Users\\jlbak\\hands3to2")
 sys.path.append("/Users/jbaker15/Desktop/hands3to2")
 
+print(" ")
+
 
 # Define the list of (x, y) coordinates
 xy_pairs = [(-3.5, 0.25), 
@@ -38,7 +40,8 @@ def get_tallest_z_under_3(x, y):
             _max_z=max([corner.z for corner in bbox])+.025
             if x>= x_min and x <= x_max:
                 if y >= y_min and y <= y_max:
-                    max_z = max(max_z, _max_z)
+                    if _max_z<2.5:
+                        max_z = max(max_z, _max_z)
     return max_z if max_z != float('-inf') else None  # Return None if no valid Z is found
 
 # Loop through each (x, y) pair and find the tallest Z under 3
