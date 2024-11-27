@@ -2,6 +2,7 @@ import bpy
 import mathutils
 import os
 import sys
+import random
 
 sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -40,12 +41,21 @@ def get_tallest_z_under_3(x, y):
             _max_z=max([corner.z for corner in bbox])+.025
             if x>= x_min and x <= x_max:
                 if y >= y_min and y <= y_max:
-                    if _max_z<2.5:
+                    if _max_z<2:
                         max_z = max(max_z, _max_z)
     return max_z if max_z != float('-inf') else None  # Return None if no valid Z is found
 
+
+def get_random_point(x_min,x_max,y_min,y_max):
+    return (round(random.uniform(x_min, x_max),3),round(random.uniform(y_min, y_max),3))
+
+
+box_bounds=[(-2.5,1.5,-2,3),(-5,-3,-2,1.5)]
 # Loop through each (x, y) pair and find the tallest Z under 3
 results = {}
+for b in box_bounds:
+    for k in range(5):
+        xy_pairs.append(get_random_point(*b))
 for x, y in xy_pairs:
     tallest_z = get_tallest_z_under_3(x, y)
     results[(x, y)] = tallest_z
