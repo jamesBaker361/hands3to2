@@ -345,9 +345,10 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                             location_vector=Vector((location[0],location[1],location[2]))
                             camera_position_list=generate_camera_positions(location_vector,distance,angle_step,scale,False,False,new_collection)
                         
-                            
+                            print("n camera_positions", len(camera_position_list))
+
                             for c,camera_pos in enumerate(camera_position_list):
-                                print(f"\t\t\tposition {camera_pos}")
+                                #print(f"\t\t\tposition {camera_pos}")
                                 camera.location=camera_pos
                                 before_rotation=camera.rotation_euler
                                 #for constraint in camera.constraints:
@@ -356,7 +357,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                 character_keys=[k for k in character_dict.keys()]
                                 random.shuffle(character_keys)
                                 for character in character_keys:
-                                    print(f"\t\t\t\t character{character}")
+                                    #print(f"\t\t\t\t character{character}")
                                     reset(character,False)
                                     
                                     if character not in bpy.data.objects:
@@ -385,8 +386,8 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                     for corner in bbox_corners:
                                         if corner.z<lowest_corner.z:
                                             corner=lowest_corner
-                                    print(f"matrix world before {character_obj.matrix_world}")
-                                    print(f"lowest corner before mpving {lowest_corner}")
+                                    #print(f"matrix world before {character_obj.matrix_world}")
+                                    #print(f"lowest corner before mpving {lowest_corner}")
                                     character_obj.location = (location[0], location[1],  location[2]-min_z)
                                     #character_obj.matrix_world.translation=Vector((location[0], location[1],  location[2]))
                                     #print(f"location {character_obj.location}")
@@ -398,14 +399,14 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
                                     #create_bounding_box(character_obj)
 
-                                    print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
-                                    print(f"relative rotation {relative_rotation}")
+                                    #print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
+                                    #print(f"relative rotation {relative_rotation}")
 
 
                                     # Rotate the object around the axis to align with the camera
                                     character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
                                     for rotation in [r for r in range(0,360,character_angle_step)]+[random.randint(0,360) for _ in range(random_angles)]:
-                                        print("character location",character_obj.location)
+                                        #print("character location",character_obj.location)
                                         character_obj.rotation_euler.rotate_axis(axis,math.radians(rotation))
                                         character_folder=os.path.join(FOLDER, scene_mesh_name, character)
                                         os.makedirs(character_folder, exist_ok= True)
@@ -441,11 +442,13 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                     # Delete the object
                                     bpy.ops.object.delete()
                 except BreakOutException:
+                    print("inner breakout")
                     if start>=limit:
-                        raise BreakOutException        
+                        raise BreakOutException       
             #clean_collection(tracker_collection_name)
             reset(scene_mesh_name,True)
         except BreakOutException:
+            print("outer breakout")
             reset(scene_mesh_name,False)
 
         reset(scene_mesh_name,False)
