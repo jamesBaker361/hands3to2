@@ -82,7 +82,7 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1,make_c
     
     # Loop through different angles to generate camera positions around the object
     for azimuth in range(0, 360, angle_step):  # Azimuth angle (angle around the object)
-        for elevation in range(-90, 90, angle_step):  # Elevation angle (angle above/below the object)
+        for elevation in range(0, 90, angle_step):  # Elevation angle (angle above/below the object)
             
             # Convert spherical coordinates to Cartesian coordinates
             theta = math.radians(azimuth)
@@ -130,7 +130,7 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1,make_c
                 #new_camera.rotation_euler=camera.rotation_euler
 
 
-            if location_unobstructed and location_above_unobstructed:
+            if location_unobstructed: #and location_above_unobstructed:
                 # Store valid camera positions
                 positions.append(camera_location)
                 
