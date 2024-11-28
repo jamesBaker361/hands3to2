@@ -264,33 +264,8 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
 
         # Set max light bounces to 2
         bpy.context.scene.cycles.max_bounces = 2
-        character_dict={"Owl_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Owl_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
-        scene_camera_params_dict={
-        "bedroom":SceneParameters([[0.4,1.5,0.72]],[0.2,1.5],[5,10],[0.5,4]),
-        "office":SceneParameters([[3,3,0.75],
-                                [5,3,0.75],
-                                [0.3,3,0.75],
-                                [2,3.5,0.01],
-                                [7,4,0.01]],[0.2,1.0],[5,10],[0.5,3]),
-        "room":SceneParameters([
-            #[-0.5,-1,0.11],
-                            # [0.5,2.2,0.41],
-                            # [-1,-0.25,0.21],
-                            # [-2.75,0.25,0.57],
-                                [-3.5,0.25,0.65],
-                                [-3.9,-1.3,0.65],
-                            # [-3,-1.3,0.65],
-                            # [-1.4,-2.1,0.415],
-                                [-1.3,-2.1,0.045],
-                            # [-1,-2.2,0.045],
-                            # [-5.2,-1.2,0.65],
-                            # [-5.1,0.1,0.65],
-                            # [1,-0.8,0.2],
-                                [1.2,-2.05,0.37],
-                            # [0.5,-2.28,1.61],
-                            # [0,2,0.55]
-                                ],[0.95,1.1],[.05,1],[0.5,2.0])                         
-        }
+        character_dict={"Gorilla_Quad":CharacterParameters([math.pi/2,0,0],"Y"),"Gorilla_Quad":CharacterParameters([math.pi/2,0,0],"Y")}
+
 
     else:
         scale_samples=4
@@ -299,7 +274,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
         distance_samples=4
         character_angle_step=120
         limit=10000
-        limit_per_location=128
+        limit_per_location=16
         random_angles=4
         # Set resolution to 128x128
         bpy.context.scene.render.resolution_x = 512
@@ -369,104 +344,102 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                             print(f"\t distance {distance}")
                             location_vector=Vector((location[0],location[1],location[2]))
                             camera_position_list=generate_camera_positions(location_vector,distance,angle_step,scale,False,False,new_collection)
-                            for light_step in range(light_samples+1):
-                                light_energy=scene_params.light_range[0]+(scene_params.light_range[1]-scene_params.light_range[0])*(light_step/light_samples)
-                                #light.data.energy=light_energy
-                                print(f"\t\t light {light_energy}")
-                                for c,camera_pos in enumerate(camera_position_list):
-                                    print(f"\t\t\tposition {camera_pos}")
-                                    camera.location=camera_pos
-                                    before_rotation=camera.rotation_euler
-                                    #for constraint in camera.constraints:
-                                    #    camera.constraints.remove(constraint)
-                                    camera.rotation_euler=before_rotation
-                                    character_keys=[k for k in character_dict.keys()]
-                                    random.shuffle(character_keys)
-                                    for character in character_keys:
-                                        print(f"\t\t\t\t character{character}")
-                                        reset(character,False)
+                        
+                            
+                            for c,camera_pos in enumerate(camera_position_list):
+                                print(f"\t\t\tposition {camera_pos}")
+                                camera.location=camera_pos
+                                before_rotation=camera.rotation_euler
+                                #for constraint in camera.constraints:
+                                #    camera.constraints.remove(constraint)
+                                camera.rotation_euler=before_rotation
+                                character_keys=[k for k in character_dict.keys()]
+                                random.shuffle(character_keys)
+                                for character in character_keys:
+                                    print(f"\t\t\t\t character{character}")
+                                    reset(character,False)
+                                    
+                                    if character not in bpy.data.objects:
+                                        filepath=os.path.join(script_directory, "characters",character, f"{character}.obj")
+                                        bpy.ops.wm.obj_import(filepath=filepath)
+                                    character_obj=bpy.data.objects[character]
+                                    for collection in character_obj.users_collection:
+                                        collection.objects.unlink(character_obj)
+
+                                    character_collection.objects.link(character_obj)
+                                    character_obj.location=(0,0,0)
+                                    rescale_to_unit_box(character_obj,scale)
+                                    character_obj.rotation_euler=character_dict[character].rotation
+                                    character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
+                                    # Adjust the object's location based on its bottom point
+                                    
+                                    # Offset the object's location so its bottom is at desired_location
+                                    
+                                    #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
+                                    #print(f"location {character_obj.location}")
+
+                                    bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
+                                    min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
+                                    lowest=0
+                                    lowest_corner=bbox_corners[0]
+                                    for corner in bbox_corners:
+                                        if corner.z<lowest_corner.z:
+                                            corner=lowest_corner
+                                    print(f"matrix world before {character_obj.matrix_world}")
+                                    print(f"lowest corner before mpving {lowest_corner}")
+                                    character_obj.location = (location[0], location[1],  location[2]-min_z)
+                                    #character_obj.matrix_world.translation=Vector((location[0], location[1],  location[2]))
+                                    #print(f"location {character_obj.location}")
+                                    axis=character_dict[character].axis
+
+                                    camera_object_distance=camera.location-character_obj.location
+
+                                    relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
+
+                                    #create_bounding_box(character_obj)
+
+                                    print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
+                                    print(f"relative rotation {relative_rotation}")
+
+
+                                    # Rotate the object around the axis to align with the camera
+                                    character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
+                                    for rotation in [r for r in range(0,360,character_angle_step)]+[random.randint(0,360) for _ in range(random_angles)]:
+                                        print("character location",character_obj.location)
+                                        character_obj.rotation_euler.rotate_axis(axis,math.radians(rotation))
+                                        character_folder=os.path.join(FOLDER, scene_mesh_name, character)
+                                        os.makedirs(character_folder, exist_ok= True)
+                                        #os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
+                                        start+=1
+                                        location_count+=1
+                                        if start>limit or location_count> limit_per_location:
+                                            raise BreakOutException
+                                        file_name=f"{distance}_{rotation}_{scale}.png"
+                                        bpy.context.scene.render.filepath = os.path.join(character_folder, file_name)
                                         
-                                        if character not in bpy.data.objects:
-                                            filepath=os.path.join(script_directory, "characters",character, f"{character}.obj")
-                                            bpy.ops.wm.obj_import(filepath=filepath)
-                                        character_obj=bpy.data.objects[character]
-                                        for collection in character_obj.users_collection:
-                                            collection.objects.unlink(character_obj)
-
-                                        character_collection.objects.link(character_obj)
-                                        character_obj.location=(0,0,0)
-                                        rescale_to_unit_box(character_obj,scale)
-                                        character_obj.rotation_euler=character_dict[character].rotation
-                                        character_obj.rotation_euler[2] = 0  # Apply the angle to the Z-axis
-                                        # Adjust the object's location based on its bottom point
+                                        bpy.context.scene.render.image_settings.file_format = 'PNG'
                                         
-                                        # Offset the object's location so its bottom is at desired_location
-                                        
-                                        #print(f"character_obj.location.z {character_obj.location.z} - min_z {min_z} = {offset_z}")
-                                        #print(f"location {character_obj.location}")
 
-                                        bbox_corners = [ character_obj.matrix_world @ mathutils.Vector(corner) for corner in character_obj.bound_box]
-                                        min_z = min(corner.z for corner in bbox_corners)  # Find the minimum Z to get the bottom
-                                        lowest=0
-                                        lowest_corner=bbox_corners[0]
-                                        for corner in bbox_corners:
-                                            if corner.z<lowest_corner.z:
-                                                corner=lowest_corner
-                                        print(f"matrix world before {character_obj.matrix_world}")
-                                        print(f"lowest corner before mpving {lowest_corner}")
-                                        character_obj.location = (location[0], location[1],  location[2]-min_z)
-                                        #character_obj.matrix_world.translation=Vector((location[0], location[1],  location[2]))
-                                        #print(f"location {character_obj.location}")
-                                        axis=character_dict[character].axis
+                                        # Render and save the screenshot from the camera's perspective
+                                        bpy.ops.render.render(write_still=True)
+                                        #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
 
-                                        camera_object_distance=camera.location-character_obj.location
-
-                                        relative_rotation=math.radians(quadrant_angle(camera_object_distance[0], camera_object_distance[1]))
-
-                                        #create_bounding_box(character_obj)
-
-                                        print(f"{camera.location} -{character_obj.location} = {camera_object_distance} ")
-                                        print(f"relative rotation {relative_rotation}")
-
-
-                                        # Rotate the object around the axis to align with the camera
-                                        character_obj.rotation_euler.rotate_axis(axis, relative_rotation)  # Apply the opposite to align
-                                        for rotation in [r for r in range(0,360,character_angle_step)]+[random.randint(0,360) for _ in range(random_angles)]:
-                                            print("character location",character_obj.location)
-                                            character_obj.rotation_euler.rotate_axis(axis,math.radians(rotation))
-                                            character_folder=os.path.join(FOLDER, scene_mesh_name, character)
-                                            os.makedirs(character_folder, exist_ok= True)
-                                            #os.makedirs(f"{folder}\\{scene_mesh_name}\\{character}",exist_ok=True)
-                                            start+=1
-                                            location_count+=1
-                                            if start>limit or location_count> limit_per_location:
-                                                raise BreakOutException
-                                            file_name=f"{distance}_{rotation}_{scale}.png"
-                                            bpy.context.scene.render.filepath = os.path.join(character_folder, file_name)
-                                            
-                                            bpy.context.scene.render.image_settings.file_format = 'PNG'
-                                            
-
-                                            # Render and save the screenshot from the camera's perspective
-                                            bpy.ops.render.render(write_still=True)
-                                            #bpy.ops.screen.screenshot(bpy.context.scene.render.filepath)
-
-                                            bpy.context.view_layer.update()
-                                            x,y=world_to_screen(location)
-                                            x_1,y_1=world_to_screen((location[0], location[1], location[2] + scale))
-                                            #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
-                                            print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
-                                            print("Screenshot saved to:", bpy.context.scene.render.filepath)
-                                            write_file.write(f"\n{bpy.context.scene.render.filepath},{character},{x},{y},{x_1},{y_1},{rotation}")
-                                            character_obj.rotation_euler.rotate_axis(axis,-math.radians(rotation))
-                                            #raise BreakOutException
-                                        
-                                        reset(character,True)
-                                        bpy.context.view_layer.objects.active = character_obj
-                                        # Select the object
-                                        character_obj.select_set(True)
-                                        # Delete the object
-                                        bpy.ops.object.delete()
+                                        bpy.context.view_layer.update()
+                                        x,y=world_to_screen(location)
+                                        x_1,y_1=world_to_screen((location[0], location[1], location[2] + scale))
+                                        #add_dots_to_image(bpy.context.scene.render.filepath,(x,y),(x_1,y_1))
+                                        print(f"x,y= {x},{y} x_1,y_1 {x_1},{y_1}")
+                                        print("Screenshot saved to:", bpy.context.scene.render.filepath)
+                                        write_file.write(f"\n{bpy.context.scene.render.filepath},{character},{x},{y},{x_1},{y_1},{rotation}")
+                                        character_obj.rotation_euler.rotate_axis(axis,-math.radians(rotation))
+                                        #raise BreakOutException
+                                    
+                                    reset(character,True)
+                                    bpy.context.view_layer.objects.active = character_obj
+                                    # Select the object
+                                    character_obj.select_set(True)
+                                    # Delete the object
+                                    bpy.ops.object.delete()
                 except BreakOutException:
                     if start>=limit:
                         raise BreakOutException        
