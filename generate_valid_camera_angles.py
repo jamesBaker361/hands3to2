@@ -3,11 +3,12 @@ import math
 import mathutils
 from mathutils import Vector
 import re
+import platform
 import os
 import sys
-sys.path.append("\\Users\\jlbak\\hands3to2")
-folder="\\Users\\jlbak\\hands3to2\\camera_test\\"
-os.makedirs(folder,exist_ok=True)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from static_globals import *
+
 camera = bpy.context.scene.camera
 
 SHITTY="shitty_camera"
@@ -48,9 +49,11 @@ def is_unobstructed(camera_location, target_location):
     #print(f"\t\tobstruction {target_location} - {camera_location} = {target_location - camera_location}")
     direction = (target_location - camera_location).normalized()
     result, location, normal, index, obj, matrix = bpy.context.scene.ray_cast(bpy.context.view_layer.depsgraph, camera_location, direction)
-    #if result:
+    if result:
         
         #print(f"hit {obj.name}  at location {location} camera is at {camera_location}")
+        if (target_location - camera_location).length < (location-camera_location).length:
+            return True
     # If result[0] is True, it means the ray hit something, and the view is obstructed
     return not result
 
@@ -81,7 +84,7 @@ def generate_camera_positions(object_location, radius, angle_step,scale=1,make_c
     
     # Loop through different angles to generate camera positions around the object
     for azimuth in range(0, 360, angle_step):  # Azimuth angle (angle around the object)
-        for elevation in range(-90, 90, angle_step):  # Elevation angle (angle above/below the object)
+        for elevation in range(0, 90, angle_step):  # Elevation angle (angle above/below the object)
             
             # Convert spherical coordinates to Cartesian coordinates
             theta = math.radians(azimuth)
@@ -168,7 +171,7 @@ if __name__=="__main__":
         rot_quat = direction.to_track_quat('-Z', 'Y')
         #camera.rotation_euler = rot_quat.to_euler()
         # Set render settings for the screenshot
-        bpy.context.scene.render.filepath = f"{folder}\\pic_{i}.png"
+        bpy.context.scene.render.filepath =  os.path.join(FOLDER, f"pic_{i}.png") #f"{FOLDER}\\pic_{i}.png"
         bpy.context.scene.render.image_settings.file_format = 'PNG'
         
 
