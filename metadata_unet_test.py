@@ -1,0 +1,45 @@
+from metadata_unet import *
+
+from diffusers.utils import load_image, make_image_grid
+from PIL import Image
+import cv2
+import numpy as np
+import unittest
+
+original_image = load_image(
+    "https://hf.co/datasets/huggingface/documentation-images/resolve/main/diffusers/input_image_vermeer.png"
+)
+
+image = np.array(original_image)
+
+low_threshold = 100
+high_threshold = 200
+
+image = cv2.Canny(image, low_threshold, high_threshold)
+image = image[:, :, None]
+image = np.concatenate([image, image, image], axis=2)
+canny_image = Image.fromarray(image)
+
+#TODO: test with/without controlnet, with/without both kinds of metadata (8 tests!)
+num_metadata=5
+num_metadata_3d=1
+metadata_3d_channels=[4,8,16]
+metadata_3d_input_channels=3,
+metadata_3d_dim=256
+
+metadata=
+
+def TestMeta(unittest.TestCase):
+    def test_forward(self):
+        for pipe_class in [DiffusionPipeline,StableDiffusionControlNetPipeline]:
+            for use_metadata in [True,False]:
+                for use_metadata_3d in [True,False]:
+                    with self.subTest(pipe_class=pipe_class, use_metadata=use_metadata,use_metadata_3d=use_metadata_3d):
+                        kwargs={"num_inference_steps"}
+                        if pipe_class==DiffusionPipeline:
+                            pipe=DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
+                        else:
+                            controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny")
+                            pipe=StableDiffusionControlNetPipeline.from_pretrained("CompVis/stable-diffusion-v1-4",controlnet=controlnet)
+                            kwargs["image"]=canny_image
+                        pipe.unet=MetaDataUnet.from_unet(pipe.unet,use_metadata=use_metadata,use_metadata_3d=use_metadata_3d)
