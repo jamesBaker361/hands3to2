@@ -189,7 +189,7 @@ class MetaDataUnet(UNet2DConditionModel):
         num_metadata_3d:Optional[int]=1,
         metadata_3d_kernel:Optional[int]=4,
         metadata_3d_stride:Optional[int]=2,
-        metadata_3d_channels:Optional[Tuple[int, ...]] = (4, 8, 16, 32),
+        metadata_3d_channel_list:Optional[Tuple[int, ...]] = (4, 8, 16, 32),
         metadata_3d_input_channels:Optional[int]=3,
         metadata_3d_dim:Optional[int]=512):
         
@@ -269,14 +269,15 @@ class MetaDataUnet(UNet2DConditionModel):
         if use_metadata_3d:
             def meta_block():
                 modules=[
-                    nn.Conv3d(metadata_3d_input_channels, metadata_3d_channels[0],metadata_3d_kernel, metadata_3d_stride, metadata_3d_stride//2)
+                    nn.Conv3d(metadata_3d_input_channels, metadata_3d_channel_list[0],metadata_3d_kernel, metadata_3d_stride, metadata_3d_stride//2)
                 ]
                 w=metadata_3d_dim//metadata_3d_stride
-                for k in range(1,len(metadata_3d_input_channels)):
-                    modules.append(nn.Conv3d(metadata_3d_input_channels[k-1], metadata_3d_channels[k],metadata_3d_kernel, metadata_3d_stride, metadata_3d_stride//2))
+                for k in range(1,len(metadata_3d_channel_list)):
+                    modules.append(nn.Conv3d(metadata_3d_channel_list[k-1], metadata_3d_channel_list[k],metadata_3d_kernel, metadata_3d_stride, metadata_3d_stride//2))
                     w=w//metadata_3d_stride
                 modules.append(nn.Flatten())
-                modules.append(nn.Linear(metadata_3d_channels[-1]*w*w*w,time_embed_dim))
+                modules.append(nn.Linear(metadata_3d_channel_list[-1]*w*w*w,time_embed_dim))
+                return nn.Sequential(*modules)
             self.metadata_3d_embedding=nn.ModuleList([meta_block() for _ in range(num_metadata_3d)])
             self.num_metadata_3d=num_metadata_3d
         else:
@@ -290,7 +291,7 @@ class MetaDataUnet(UNet2DConditionModel):
         num_metadata_3d:Optional[int]=1,
         metadata_3d_kernel:Optional[int]=4,
         metadata_3d_stride:Optional[int]=2,
-        metadata_3d_channels:Optional[Tuple[int, ...]] = (4, 8, 16, 32),
+        metadata_3d_channel_list:Optional[Tuple[int, ...]] = (4, 8, 16, 32),
         metadata_3d_input_channels:Optional[int]=3,
         metadata_3d_dim:Optional[int]=512):
         new_unet=cls(
@@ -309,7 +310,7 @@ class MetaDataUnet(UNet2DConditionModel):
             num_metadata_3d=num_metadata_3d,
             metadata_3d_kernel=metadata_3d_kernel,
             metadata_3d_stride=metadata_3d_stride,
-            metadata_3d_channels=metadata_3d_channels,
+            metadata_3d_channel_list=metadata_3d_channel_list,
             metadata_3d_input_channels=metadata_3d_input_channels,
             metadata_3d_dim=metadata_3d_dim
         )
@@ -436,7 +437,6 @@ class MetaDataUnet(UNet2DConditionModel):
         except AttributeError:
             pass
 
-        print(new_unet.config)
         return new_unet
 
 
@@ -593,7 +593,7 @@ class MetaDataUnet(UNet2DConditionModel):
             md_bsz=metadata_3d.shape[0]
             metadata_3d=metadata_3d.to(dtype=self.dtype)
             for i,md_embed_3d in enumerate(self.metadata_3d_embedding):
-                md_emb_3d=md_embed_3d(metadata[:,i,:,:,:,:])
+                md_emb_3d=md_embed_3d(metadata_3d[:,i,:,:,:,:])
                 emb=emb+md_emb_3d
 
         # 2. pre-process
@@ -748,8 +748,8 @@ class MetaDataUnet(UNet2DConditionModel):
 def forward_metadata(self,
         prompt: Union[str, List[str]] = None,
         image: PipelineImageInput = None,
-        height: Optional[int] = None,
-        width: Optional[int] = None,
+        height: Optional[int] = 256,
+        width: Optional[int] = 256,
         num_inference_steps: int = 50,
         timesteps: List[int] = None,
         sigmas: List[float] = None,
@@ -906,35 +906,56 @@ def forward_metadata(self,
         if isinstance(callback_on_step_end, (PipelineCallback, MultiPipelineCallbacks)):
             callback_on_step_end_tensor_inputs = callback_on_step_end.tensor_inputs
 
-        controlnet = self.controlnet._orig_mod if is_compiled_module(self.controlnet) else self.controlnet
+        try:
+            self.controlnet=self.controlnet
+            available_controlnet=True
+        except AttributeError:
+            available_controlnet=False
 
-        # align format for control guidance
-        if not isinstance(control_guidance_start, list) and isinstance(control_guidance_end, list):
-            control_guidance_start = len(control_guidance_end) * [control_guidance_start]
-        elif not isinstance(control_guidance_end, list) and isinstance(control_guidance_start, list):
-            control_guidance_end = len(control_guidance_start) * [control_guidance_end]
-        elif not isinstance(control_guidance_start, list) and not isinstance(control_guidance_end, list):
-            mult = len(controlnet.nets) if isinstance(controlnet, MultiControlNetModel) else 1
-            control_guidance_start, control_guidance_end = (
-                mult * [control_guidance_start],
-                mult * [control_guidance_end],
-            )
+        if available_controlnet:
+            controlnet = self.controlnet._orig_mod if is_compiled_module(self.controlnet) else self.controlnet
+
+            # align format for control guidance
+            if not isinstance(control_guidance_start, list) and isinstance(control_guidance_end, list):
+                control_guidance_start = len(control_guidance_end) * [control_guidance_start]
+            elif not isinstance(control_guidance_end, list) and isinstance(control_guidance_start, list):
+                control_guidance_end = len(control_guidance_start) * [control_guidance_end]
+            elif not isinstance(control_guidance_start, list) and not isinstance(control_guidance_end, list):
+                mult = len(controlnet.nets) if isinstance(controlnet, MultiControlNetModel) else 1
+                control_guidance_start, control_guidance_end = (
+                    mult * [control_guidance_start],
+                    mult * [control_guidance_end],
+                )
 
         # 1. Check inputs. Raise error if not correct
-        self.check_inputs(
-            prompt,
-            image,
-            callback_steps,
-            negative_prompt,
-            prompt_embeds,
-            negative_prompt_embeds,
-            ip_adapter_image,
-            ip_adapter_image_embeds,
-            controlnet_conditioning_scale,
-            control_guidance_start,
-            control_guidance_end,
-            callback_on_step_end_tensor_inputs,
-        )
+        if available_controlnet:
+            self.check_inputs(
+                prompt,
+                image,
+                callback_steps,
+                negative_prompt,
+                prompt_embeds,
+                negative_prompt_embeds,
+                ip_adapter_image,
+                ip_adapter_image_embeds,
+                controlnet_conditioning_scale,
+                control_guidance_start,
+                control_guidance_end,
+                callback_on_step_end_tensor_inputs,
+            )
+        else:
+            self.check_inputs(
+                prompt,
+                height,
+                width,
+                callback_steps,
+                negative_prompt,
+                prompt_embeds,
+                negative_prompt_embeds,
+                ip_adapter_image,
+                ip_adapter_image_embeds,
+                callback_on_step_end_tensor_inputs,
+            )
 
         self._guidance_scale = guidance_scale
         self._clip_skip = clip_skip
@@ -951,15 +972,17 @@ def forward_metadata(self,
 
         device = self._execution_device
 
-        if isinstance(controlnet, MultiControlNetModel) and isinstance(controlnet_conditioning_scale, float):
-            controlnet_conditioning_scale = [controlnet_conditioning_scale] * len(controlnet.nets)
+        if available_controlnet:
 
-        global_pool_conditions = (
-            controlnet.config.global_pool_conditions
-            if isinstance(controlnet, ControlNetModel)
-            else controlnet.nets[0].config.global_pool_conditions
-        )
-        guess_mode = guess_mode or global_pool_conditions
+            if isinstance(controlnet, MultiControlNetModel) and isinstance(controlnet_conditioning_scale, float):
+                controlnet_conditioning_scale = [controlnet_conditioning_scale] * len(controlnet.nets)
+
+            global_pool_conditions = (
+                controlnet.config.global_pool_conditions
+                if isinstance(controlnet, ControlNetModel)
+                else controlnet.nets[0].config.global_pool_conditions
+            )
+            guess_mode = guess_mode or global_pool_conditions
 
         # 3. Encode input prompt
         text_encoder_lora_scale = (
@@ -991,31 +1014,11 @@ def forward_metadata(self,
                 self.do_classifier_free_guidance,
             )
 
-        # 4. Prepare image
-        if isinstance(controlnet, ControlNetModel):
-            image = self.prepare_image(
-                image=image,
-                width=width,
-                height=height,
-                batch_size=batch_size * num_images_per_prompt,
-                num_images_per_prompt=num_images_per_prompt,
-                device=device,
-                dtype=controlnet.dtype,
-                do_classifier_free_guidance=self.do_classifier_free_guidance,
-                guess_mode=guess_mode,
-            )
-            height, width = image.shape[-2:]
-        elif isinstance(controlnet, MultiControlNetModel):
-            images = []
-
-            # Nested lists as ControlNet condition
-            if isinstance(image[0], list):
-                # Transpose the nested image list
-                image = [list(t) for t in zip(*image)]
-
-            for image_ in image:
-                image_ = self.prepare_image(
-                    image=image_,
+        if available_controlnet:
+            # 4. Prepare image
+            if isinstance(controlnet, ControlNetModel):
+                image = self.prepare_image(
+                    image=image,
                     width=width,
                     height=height,
                     batch_size=batch_size * num_images_per_prompt,
@@ -1025,13 +1028,34 @@ def forward_metadata(self,
                     do_classifier_free_guidance=self.do_classifier_free_guidance,
                     guess_mode=guess_mode,
                 )
+                height, width = image.shape[-2:]
+            elif isinstance(controlnet, MultiControlNetModel):
+                images = []
 
-                images.append(image_)
+                # Nested lists as ControlNet condition
+                if isinstance(image[0], list):
+                    # Transpose the nested image list
+                    image = [list(t) for t in zip(*image)]
 
-            image = images
-            height, width = image[0].shape[-2:]
-        else:
-            assert False
+                for image_ in image:
+                    image_ = self.prepare_image(
+                        image=image_,
+                        width=width,
+                        height=height,
+                        batch_size=batch_size * num_images_per_prompt,
+                        num_images_per_prompt=num_images_per_prompt,
+                        device=device,
+                        dtype=controlnet.dtype,
+                        do_classifier_free_guidance=self.do_classifier_free_guidance,
+                        guess_mode=guess_mode,
+                    )
+
+                    images.append(image_)
+
+                image = images
+                height, width = image[0].shape[-2:]
+            else:
+                assert False
 
         # 5. Prepare timesteps
         timesteps, num_inference_steps = retrieve_timesteps(
@@ -1069,20 +1093,23 @@ def forward_metadata(self,
             if ip_adapter_image is not None or ip_adapter_image_embeds is not None
             else None
         )
-
-        # 7.2 Create tensor stating which controlnets to keep
-        controlnet_keep = []
-        for i in range(len(timesteps)):
-            keeps = [
-                1.0 - float(i / len(timesteps) < s or (i + 1) / len(timesteps) > e)
-                for s, e in zip(control_guidance_start, control_guidance_end)
-            ]
-            controlnet_keep.append(keeps[0] if isinstance(controlnet, ControlNetModel) else keeps)
+        if available_controlnet:
+            # 7.2 Create tensor stating which controlnets to keep
+            controlnet_keep = []
+            for i in range(len(timesteps)):
+                keeps = [
+                    1.0 - float(i / len(timesteps) < s or (i + 1) / len(timesteps) > e)
+                    for s, e in zip(control_guidance_start, control_guidance_end)
+                ]
+                controlnet_keep.append(keeps[0] if isinstance(controlnet, ControlNetModel) else keeps)
 
         # 8. Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         is_unet_compiled = is_compiled_module(self.unet)
-        is_controlnet_compiled = is_compiled_module(self.controlnet)
+        if available_controlnet:
+            is_controlnet_compiled = is_compiled_module(self.controlnet)
+        else:
+            is_controlnet_compiled =True
         is_torch_higher_equal_2_1 = is_torch_version(">=", "2.1")
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
@@ -1097,41 +1124,46 @@ def forward_metadata(self,
                 latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
-                # controlnet(s) inference
-                if guess_mode and self.do_classifier_free_guidance:
-                    # Infer ControlNet only for the conditional batch.
-                    control_model_input = latents
-                    control_model_input = self.scheduler.scale_model_input(control_model_input, t)
-                    controlnet_prompt_embeds = prompt_embeds.chunk(2)[1]
+                if available_controlnet:
+                    # controlnet(s) inference
+                    if guess_mode and self.do_classifier_free_guidance:
+                        # Infer ControlNet only for the conditional batch.
+                        control_model_input = latents
+                        control_model_input = self.scheduler.scale_model_input(control_model_input, t)
+                        controlnet_prompt_embeds = prompt_embeds.chunk(2)[1]
+                    else:
+                        control_model_input = latent_model_input
+                        controlnet_prompt_embeds = prompt_embeds
+
+                    if isinstance(controlnet_keep[i], list):
+                        cond_scale = [c * s for c, s in zip(controlnet_conditioning_scale, controlnet_keep[i])]
+                    else:
+                        controlnet_cond_scale = controlnet_conditioning_scale
+                        if isinstance(controlnet_cond_scale, list):
+                            controlnet_cond_scale = controlnet_cond_scale[0]
+                        cond_scale = controlnet_cond_scale * controlnet_keep[i]
+
+                    down_block_res_samples, mid_block_res_sample = self.controlnet(
+                        control_model_input,
+                        t,
+                        encoder_hidden_states=controlnet_prompt_embeds,
+                        controlnet_cond=image,
+                        conditioning_scale=cond_scale,
+                        guess_mode=guess_mode,
+                        return_dict=False,
+                    )
+
+                    if guess_mode and self.do_classifier_free_guidance:
+                        # Inferred ControlNet only for the conditional batch.
+                        # To apply the output of ControlNet to both the unconditional and conditional batches,
+                        # add 0 to the unconditional batch to keep it unchanged.
+                        down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in down_block_res_samples]
+                        mid_block_res_sample = torch.cat([torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
                 else:
-                    control_model_input = latent_model_input
-                    controlnet_prompt_embeds = prompt_embeds
+                    down_block_res_samples=None
+                    mid_block_res_sample=None
 
-                if isinstance(controlnet_keep[i], list):
-                    cond_scale = [c * s for c, s in zip(controlnet_conditioning_scale, controlnet_keep[i])]
-                else:
-                    controlnet_cond_scale = controlnet_conditioning_scale
-                    if isinstance(controlnet_cond_scale, list):
-                        controlnet_cond_scale = controlnet_cond_scale[0]
-                    cond_scale = controlnet_cond_scale * controlnet_keep[i]
-
-                down_block_res_samples, mid_block_res_sample = self.controlnet(
-                    control_model_input,
-                    t,
-                    encoder_hidden_states=controlnet_prompt_embeds,
-                    controlnet_cond=image,
-                    conditioning_scale=cond_scale,
-                    guess_mode=guess_mode,
-                    return_dict=False,
-                )
-
-                if guess_mode and self.do_classifier_free_guidance:
-                    # Inferred ControlNet only for the conditional batch.
-                    # To apply the output of ControlNet to both the unconditional and conditional batches,
-                    # add 0 to the unconditional batch to keep it unchanged.
-                    down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in down_block_res_samples]
-                    mid_block_res_sample = torch.cat([torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
-
+                
                 # predict the noise residual
                 noise_pred = self.unet(
                     latent_model_input,
@@ -1143,6 +1175,8 @@ def forward_metadata(self,
                     mid_block_additional_residual=mid_block_res_sample,
                     added_cond_kwargs=added_cond_kwargs,
                     return_dict=False,
+                    metadata=metadata,
+                    metadata_3d=metadata_3d
                 )[0]
 
                 # perform guidance
@@ -1174,7 +1208,8 @@ def forward_metadata(self,
         # manually for max memory savings
         if hasattr(self, "final_offload_hook") and self.final_offload_hook is not None:
             self.unet.to("cpu")
-            self.controlnet.to("cpu")
+            if available_controlnet:
+                self.controlnet.to("cpu")
             torch.cuda.empty_cache()
 
         if not output_type == "latent":
