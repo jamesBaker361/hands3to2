@@ -10,6 +10,7 @@ from diffusers.pipelines.controlnet.pipeline_controlnet import retrieve_timestep
 from diffusers.models.controlnets.controlnet import ControlNetOutput
 
 
+
 from typing import Callable
 from diffusers.configuration_utils import ConfigMixin, register_to_config
 from diffusers.loaders.single_file_model import FromOriginalModelMixin
@@ -34,31 +35,34 @@ from diffusers.models.unets.unet_2d_blocks import (
     get_down_block,
 )
 from diffusers.models.unets.unet_2d_condition import UNet2DConditionModel
-from diffusers.models.controlnet import ControlNetModel,ControlNetConditioningEmbedding,zero_module
+from diffusers.models.controlnet import ControlNetModel,zero_module
 from diffusers.models.controlnets.multicontrolnet import MultiControlNetModel
+from diffusers.models.controlnets.controlnet import ControlNetConditioningEmbedding
 
 from diffusers.callbacks import PipelineCallback,MultiPipelineCallbacks
 from diffusers.image_processor import PipelineImageInput
 
-class ControlNetConditioningEmbedding3D(ControlNetConditioningEmbedding):
+class ControlNetConditioningEmbedding3D(nn.Module):
     def __init__(
         self,
-        conditioning_embedding_channels: int,
-        conditioning_channels: int = 3,
-        block_out_channels: Tuple[int, ...] = (16, 32, 96, 256),
+        #conditioning_embedding_channels: int,
+        #conditioning_channels: int = 3,
+        #block_out_channels: Tuple[int, ...] = (16, 32, 96, 256),
     ):
         super().__init__()
 
         #3 x 1024 x 1024 x 1024 --> 8 x 32 x 32 x 32 --> 256 x 64 x 64
         self.blocks=[
-            nn.Conv3d(3,4,4,2),
-            nn.Conv3d(4,5,4,2),
-            nn.Conv3d(6,7,4,2),
-            nn.Conv3d(8,8,4,2),
-            nn.Conv3d(8,8,4,2),
-            nn.Conv3d(8,8,4,2),
+            nn.Conv3d(3,4,4,2,padding=1),
+            nn.Conv3d(4,6,4,2,padding=1),
+            nn.Conv3d(6,8,4,2,padding=1),
+            nn.Conv3d(8,10,4,2,padding=1),
+            #nn.Conv3d(8,8,4,2,padding=1),
+           # nn.Conv3d(8,8,4,2,padding=1),
 
         ]
+
+        self.transpose=nn.ConvTranspose2d(320,320,4,2,1)
 
 
 
@@ -66,7 +70,8 @@ class ControlNetConditioningEmbedding3D(ControlNetConditioningEmbedding):
         for block in self.blocks:
             embedding = block(embedding)
             embedding = F.silu(embedding)
-        size=embedding.size()
+            size=embedding.size()
+            print(size)
         if len(size)==4:
             (C,L,H,W)=size
             embedding=embedding.view(C*L,H,W)
@@ -74,11 +79,11 @@ class ControlNetConditioningEmbedding3D(ControlNetConditioningEmbedding):
             (B,C,L,H,W)=size
             embedding=embedding.view(B,C*L,H,W)
 
-        for block in self.blocks:
+        '''for block in self.blocks:
             embedding = block(embedding)
-            embedding = F.silu(embedding)
+            embedding = F.silu(embedding)'''
 
-
+        embedding=self.transpose(embedding)
         return embedding
 
 class ControlNetModel3D(ControlNetModel):
@@ -153,11 +158,11 @@ class ControlNetModel3D(ControlNetModel):
         conditioning_embedding_out_channels,
         global_pool_conditions,
         addition_embed_type_num_heads)
-        self.controlnet_cond_embedding = ControlNetConditioningEmbedding3D(
-            conditioning_embedding_channels=block_out_channels[0],
-            block_out_channels=conditioning_embedding_out_channels,
-            conditioning_channels=conditioning_channels,
-        )
+        self.controlnet_cond_embedding = ControlNetConditioningEmbedding3D()
+           # conditioning_embedding_channels=block_out_channels[0],
+           # block_out_channels=conditioning_embedding_out_channels,
+           # conditioning_channels=conditioning_channels,
+        #)
 
 
     def forward(
@@ -292,16 +297,22 @@ class ControlNetModel3D(ControlNetModel):
 
         emb = emb + aug_emb if aug_emb is not None else emb
 
+        print("emb size",emb.size())
+
         # 2. pre-process
+        #print("before sample size",sample.size())
         sample = self.conv_in(sample)
 
         controlnet_cond = self.controlnet_cond_embedding(controlnet_cond)
+        #print("controlnet cond size",controlnet_cond.size())
+        #print("sample size",sample.size())
         sample = sample + controlnet_cond
 
         # 3. down
         down_block_res_samples = (sample,)
         for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "has_cross_attention") and downsample_block.has_cross_attention:
+                print("sample size",sample.size())
                 sample, res_samples = downsample_block(
                     hidden_states=sample,
                     temb=emb,
@@ -787,7 +798,7 @@ if __name__=="__main__":
          requires_safety_checker=False
     )
 
-    image=torch.randn((1,3,1024,1024,1024))
+    image=torch.randn((1,3,512,512,512))
 
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
     #pipe.enable_model_cpu_offload()
