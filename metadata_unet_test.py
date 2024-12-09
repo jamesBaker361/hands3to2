@@ -30,6 +30,8 @@ metadata_3d_dim=256
 
 batch_size=2
 
+n_control=6
+
 metadata=torch.rand((batch_size,num_metadata))
 metadata_3d=torch.rand((batch_size,num_metadata_3d, metadata_3d_input_channels, metadata_3d_dim, metadata_3d_dim, metadata_3d_dim))
 
@@ -43,9 +45,9 @@ class TestMeta(unittest.TestCase):
                         if pipe_class==DiffusionPipeline:
                             pipe=DiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
                         else:
-                            controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny")
+                            controlnet = [ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny") for _ in range(n_control)]
                             pipe=StableDiffusionControlNetPipeline.from_pretrained("CompVis/stable-diffusion-v1-4",controlnet=controlnet)
-                            kwargs["image"]=canny_image
+                            kwargs["image"]=[canny_image for _ in range(n_control)]
                         pipe.unet=MetaDataUnet.from_unet(pipe.unet,use_metadata=use_metadata,
                             num_metadata=num_metadata, 
                             num_metadata_3d=num_metadata_3d, 
