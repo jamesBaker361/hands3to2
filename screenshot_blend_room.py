@@ -270,7 +270,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
     else:
         scale_samples=4
         light_samples=1
-        angle_step=15
+        angle_step=30
         distance_samples=4
         character_angle_step=120
         limit=10000
@@ -443,6 +443,7 @@ with open(os.path.join(script_directory,"output.txt"), "w") as file:
                                     bpy.ops.object.delete()
                 except BreakOutException:
                     print("inner breakout")
+                    print(f"start {start} limit {limit} location_count {location_count}   limit_per_location {limit_per_location}")
                     if start>=limit:
                         raise BreakOutException       
             #clean_collection(tracker_collection_name)
